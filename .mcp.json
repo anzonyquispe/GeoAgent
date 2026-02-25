@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "qgis-tools": {
+      "command": "python",
+      "args": ["qgis_mcp_server.py"],
+      "cwd": ".",
+      "env": {
+        "PYTHONPATH": "."
+      }
+    }
+  }
+}
