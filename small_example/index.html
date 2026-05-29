@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peru Environmental Analysis | GeoAgent</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --bg: #f8f9fa;
+            --text: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin: 1rem 0;
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+        }
+
+        .content {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .card h3 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: #666;
+        }
+
+        .stat {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: var(--secondary);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--primary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--secondary);
+            color: var(--secondary);
+        }
+
+        .btn-outline:hover {
+            background: var(--secondary);
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .methodology {
+            background: #f0f7ff;
+            border-left: 4px solid var(--secondary);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--secondary);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--secondary);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+
+        .tag.fire {
+            background: var(--accent);
+        }
+
+        .tag.forest {
+            background: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="../" class="back-link">&larr; Back to Main Site</a>
+        <h1>Peru Environmental Analysis</h1>
+        <p>Fire Detection and Deforestation at Municipality Level</p>
+    </header>
+
+    <div class="container">
+        <section class="content">
+            <h2>Overview</h2>
+            <p>
+                This analysis examines fire activity and forest change across Peru's ~1,874 municipalities
+                (GADM Level-3 districts) using satellite data from NASA and the University of Maryland.
+            </p>
+
+            <div class="grid">
+                <div class="card">
+                    <span class="tag fire">Fire Data</span>
+                    <h3>NASA VIIRS SNPP</h3>
+                    <p>Active fire detections at 375m resolution from the VIIRS sensor on the Suomi NPP satellite.</p>
+                </div>
+                <div class="card">
+                    <span class="tag forest">Forest Data</span>
+                    <h3>Global Forest Watch</h3>
+                    <p>Hansen et al. tree cover change data at 30m resolution, covering 2000-2024.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <h2>Analysis Components</h2>
+
+            <div class="grid">
+                <div class="card">
+                    <h3>Fire Analysis</h3>
+                    <p>Municipality-level aggregation of fire detections including:</p>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                        <li>Fire count by district</li>
+                        <li>Fire Radiative Power (FRP)</li>
+                        <li>Temporal patterns (monthly/yearly)</li>
+                        <li>Regional hotspots</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Forest Analysis</h3>
+                    <p>Deforestation metrics by municipality including:</p>
+                    <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                        <li>Forest cover 2000 (baseline)</li>
+                        <li>Annual forest loss 2001-2024</li>
+                        <li>Forest gain 2000-2012</li>
+                        <li>Net change trends</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <h2>Interactive Demo</h2>
+            <p style="margin-bottom: 1rem;">
+                Try the GeoAgent chatbot - an interactive demonstration of AI-powered spatial analysis.
+                Ask questions about fires, forests, and municipalities in Peru.
+            </p>
+            <a href="chatbot-demo.html" class="btn" style="background: #e74c3c; font-size: 1.1rem; padding: 1rem 2rem;">
+                🤖 Launch Chatbot Demo
+            </a>
+        </section>
+
+        <section class="content">
+            <h2>Resources</h2>
+
+            <a href="slides.html" class="btn">View Presentation</a>
+            <a href="chatbot-demo.html" class="btn">Chatbot Demo</a>
+            <a href="https://github.com/anzonyquispe/GeoAgent" class="btn btn-outline" target="_blank">GitHub Repository</a>
+
+            <div class="methodology">
+                <h3>Methodology</h3>
+                <p>
+                    Analysis performed using <strong>OpenSourceGeoAgent</strong>, a Python class that enables
+                    geospatial analysis with open source LLMs (via Ollama). The workflow includes:
+                </p>
+                <ol style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                    <li>Download administrative boundaries from GADM (Level-3: ~1,874 districts)</li>
+                    <li>Fetch fire data from NASA FIRMS API</li>
+                    <li>Download Hansen GFC tiles for forest analysis</li>
+                    <li>Spatial aggregation using GeoPandas</li>
+                    <li>Visualization with Folium and Matplotlib</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="content">
+            <h2>Administrative Levels</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Level</th>
+                        <th>Name</th>
+                        <th>Count</th>
+                        <th>ID Column</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Regions / Departments</td>
+                        <td>26</td>
+                        <td>GID_1</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Provinces</td>
+                        <td>~196</td>
+                        <td>GID_2</td>
+                    </tr>
+                    <tr style="background: #e8f4f8;">
+                        <td><strong>3</strong></td>
+                        <td><strong>Districts / Municipalities</strong></td>
+                        <td><strong>~1,874</strong></td>
+                        <td><strong>GID_3</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                This analysis uses GADM Level-3 (districts) for maximum geographic granularity.
+            </p>
+        </section>
+
+        <section class="content">
+            <h2>Data Sources</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dataset</th>
+                        <th>Provider</th>
+                        <th>Resolution</th>
+                        <th>Coverage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>VIIRS SNPP Active Fire</td>
+                        <td>NASA FIRMS</td>
+                        <td>375m</td>
+                        <td>2012-present</td>
+                    </tr>
+                    <tr>
+                        <td>Global Forest Change</td>
+                        <td>Hansen/UMD</td>
+                        <td>30m</td>
+                        <td>2000-2024</td>
+                    </tr>
+                    <tr>
+                        <td>Administrative Boundaries</td>
+                        <td>GADM v4.1</td>
+                        <td>Vector</td>
+                        <td>Global</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <footer>
+        <p>
+            Generated with <a href="https://github.com/anzonyquispe/GeoAgent" target="_blank">OpenSourceGeoAgent</a>
+            | <a href="../">Back to Main Site</a>
+        </p>
+        <p style="margin-top: 0.5rem;">
+            Data sources: NASA FIRMS, Global Forest Watch, GADM
+        </p>
+    </footer>
+</body>
+</html>

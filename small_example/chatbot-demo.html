@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAgent Chatbot Demo</title>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --secondary: #2b6cb0;
+            --accent: #ed8936;
+            --success: #38a169;
+            --bg: #f7fafc;
+            --chat-bg: #edf2f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1rem;
+            height: calc(100vh - 2rem);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .tool-category {
+            margin-bottom: 1.5rem;
+        }
+
+        .tool-category h3 {
+            color: var(--secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tool-list {
+            list-style: none;
+        }
+
+        .tool-list li {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
+            margin: 0.2rem 0;
+            background: var(--bg);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .tool-list li:hover {
+            background: #e2e8f0;
+            border-left-color: var(--accent);
+        }
+
+        .tool-list li code {
+            color: var(--secondary);
+            font-size: 0.75rem;
+        }
+
+        /* Main Chat Area */
+        .chat-container {
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chat-header .logo {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .chat-header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .chat-header .status {
+            margin-left: auto;
+            font-size: 0.85rem;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #68d391;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: var(--chat-bg);
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .message.assistant .message-avatar {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .message.user .message-avatar {
+            background: var(--accent);
+            color: white;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            border: 1px solid #e2e8f0;
+        }
+
+        .message.user .message-content {
+            background: var(--primary);
+            color: white;
+        }
+
+        .message-content pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 0.8rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            margin: 0.5rem 0;
+        }
+
+        .message-content code {
+            background: #edf2f7;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            color: var(--secondary);
+        }
+
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .message-content th, .message-content td {
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        .message-content th {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tool-call {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 0.6rem;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .tool-call .tool-name {
+            color: #b45309;
+            font-weight: 600;
+        }
+
+        .stat-box {
+            display: inline-block;
+            background: var(--bg);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin: 0.3rem;
+            text-align: center;
+        }
+
+        .stat-box .number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .stat-box .label {
+            font-size: 0.75rem;
+            color: #718096;
+        }
+
+        /* Input Area */
+        .chat-input {
+            padding: 1rem 1.5rem;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input input:focus {
+            border-color: var(--secondary);
+        }
+
+        .chat-input button {
+            padding: 0.8rem 1.5rem;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chat-input button:hover {
+            background: var(--primary);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            padding: 0.75rem 1.5rem;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            padding: 0.4rem 0.8rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action:hover {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+
+        /* Typing Indicator */
+        .typing {
+            display: flex;
+            gap: 4px;
+            padding: 0.5rem;
+        }
+
+        .typing span {
+            width: 8px;
+            height: 8px;
+            background: #a0aec0;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .typing span:nth-child(1) { animation-delay: -0.32s; }
+        .typing span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar with Tools -->
+        <div class="sidebar">
+            <h2>Available Tools</h2>
+
+            <div class="tool-category">
+                <h3>🤖 Agent Methods</h3>
+                <ul class="tool-list">
+                    <li onclick="insertQuery('Analyze fires in Peru for 2024')"><code>analyze_fires()</code><br>Fire detection analysis</li>
+                    <li onclick="insertQuery('What is the forest loss in Peru?')"><code>analyze_forest()</code><br>Forest change analysis</li>
+                    <li onclick="insertQuery('Create a map of fires')"><code>create_choropleth_map()</code><br>Interactive map</li>
+                    <li onclick="insertQuery('Generate a presentation')"><code>generate_presentation()</code><br>Marp slides</li>
+                </ul>
+            </div>
+
+            <div class="tool-category">
+                <h3>🔥 Fire Tools</h3>
+                <ul class="tool-list">
+                    <li onclick="insertQuery('Download fire data for 2023')"><code>download_viirs_snpp_peru()</code><br>NASA FIRMS data</li>
+                    <li onclick="insertQuery('What regions had the most fires?')"><code>get_peru_fires()</code><br>Complete pipeline</li>
+                </ul>
+            </div>
+
+            <div class="tool-category">
+                <h3>🗺️ Municipality Tools</h3>
+                <ul class="tool-list">
+                    <li onclick="insertQuery('Download Peru district boundaries')"><code>download_peru_districts()</code><br>GADM Level-3</li>
+                    <li onclick="insertQuery('Aggregate fires by municipality')"><code>intersect_and_collapse_municipality()</code><br>Spatial join</li>
+                </ul>
+            </div>
+
+            <div class="tool-category">
+                <h3>🌳 Forest Tools</h3>
+                <ul class="tool-list">
+                    <li onclick="insertQuery('Calculate forest loss by region')"><code>get_peru_forest_stats()</code><br>Hansen GFC data</li>
+                    <li onclick="insertQuery('Show annual deforestation trend')"><code>get_annual_loss_time_series()</code><br>Time series</li>
+                </ul>
+            </div>
+
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                <p style="font-size: 0.8rem; color: #718096;">
+                    <strong>Demo Mode</strong><br>
+                    This is a simulation for teaching purposes. Click any tool to try it!
+                </p>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="logo">🌍</div>
+                <div>
+                    <h1>GeoAgent</h1>
+                    <span style="font-size: 0.85rem; opacity: 0.8;">AI-Powered Spatial Analysis</span>
+                </div>
+                <div class="status">
+                    <span class="status-dot"></span>
+                    Ollama (llama3.1:8b)
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="message assistant">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <strong>Welcome to GeoAgent!</strong><br><br>
+                        I'm an AI assistant specialized in geospatial analysis for Peru. I can help you with:
+                        <ul style="margin: 0.5rem 0 0 1.5rem;">
+                            <li><strong>Fire Analysis</strong> - NASA VIIRS fire detection data</li>
+                            <li><strong>Forest Analysis</strong> - Global Forest Watch deforestation</li>
+                            <li><strong>Municipality Data</strong> - GADM Level-3 (1,874 districts)</li>
+                            <li><strong>Maps & Reports</strong> - Interactive visualizations</li>
+                        </ul>
+                        <br>
+                        Try asking: <em>"What regions in Peru had the most fires in 2024?"</em>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <span style="font-size: 0.8rem; color: #718096; margin-right: 0.5rem;">Quick:</span>
+                <button class="quick-action" onclick="sendMessage('Analyze fires in Peru for 2024')">🔥 Fire Analysis 2024</button>
+                <button class="quick-action" onclick="sendMessage('What municipalities had the most fires?')">📊 Top Municipalities</button>
+                <button class="quick-action" onclick="sendMessage('Show forest loss by region')">🌳 Forest Loss</button>
+                <button class="quick-action" onclick="sendMessage('Create a choropleth map')">🗺️ Create Map</button>
+                <button class="quick-action" onclick="sendMessage('What tools are available?')">🔧 List Tools</button>
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Ask about fires, forests, or spatial analysis..."
+                       onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulated responses database
+        const responses = {
+            'fire': {
+                toolCall: 'analyze_fires(year=2024)',
+                thinking: ['Downloading VIIRS data from NASA FIRMS...', 'Cleaning and converting to GeoDataFrame...', 'Loading municipality boundaries (GADM Level-3)...', 'Aggregating 99,932 fires by municipality...'],
+                response: `
+                    <strong>Fire Analysis Complete for Peru 2024</strong>
+                    <div style="display: flex; gap: 1rem; margin: 1rem 0;">
+                        <div class="stat-box"><div class="number">99,932</div><div class="label">Fire Detections</div></div>
+                        <div class="stat-box"><div class="number">1,499</div><div class="label">Municipalities</div></div>
+                        <div class="stat-box"><div class="number">26</div><div class="label">Regions</div></div>
+                    </div>
+                    <table>
+                        <tr><th>Region</th><th>Fires</th><th>% of Total</th></tr>
+                        <tr><td>Ucayali</td><td>18,532</td><td>18.5%</td></tr>
+                        <tr><td>San Martín</td><td>12,842</td><td>12.9%</td></tr>
+                        <tr><td>Loreto</td><td>11,764</td><td>11.8%</td></tr>
+                        <tr><td>Madre de Dios</td><td>9,592</td><td>9.6%</td></tr>
+                        <tr><td>Huánuco</td><td>9,581</td><td>9.6%</td></tr>
+                    </table>
+                    <br><strong>Policy Insight:</strong> Amazon regions account for 62% of fires. Consider targeting firefighting resources and prevention programs in Ucayali and San Martín.
+                `
+            },
+            'municipality': {
+                toolCall: 'intersect_and_collapse_municipality(fires_gdf, districts)',
+                thinking: ['Loading GADM Level-3 boundaries...', 'Performing spatial join...', 'Aggregating by GID_3...'],
+                response: `
+                    <strong>Top 10 Districts by Fire Count (2024)</strong>
+                    <table>
+                        <tr><th>Rank</th><th>District</th><th>Region</th><th>Fires</th></tr>
+                        <tr><td>1</td><td>Nueva Requena</td><td>Ucayali</td><td>3,763</td></tr>
+                        <tr><td>2</td><td>Callaria</td><td>Ucayali</td><td>2,282</td></tr>
+                        <tr><td>3</td><td>Iberia</td><td>Madre de Dios</td><td>2,159</td></tr>
+                        <tr><td>4</td><td>Irazola</td><td>Ucayali</td><td>1,907</td></tr>
+                        <tr><td>5</td><td>Campo Verde</td><td>Ucayali</td><td>1,760</td></tr>
+                        <tr><td>6</td><td>Masisea</td><td>Ucayali</td><td>1,752</td></tr>
+                        <tr><td>7</td><td>Raymondi</td><td>Ucayali</td><td>1,727</td></tr>
+                        <tr><td>8</td><td>Inapari</td><td>Madre de Dios</td><td>1,660</td></tr>
+                        <tr><td>9</td><td>Tahuamanu</td><td>Madre de Dios</td><td>1,507</td></tr>
+                        <tr><td>10</td><td>Puerto Bermúdez</td><td>Pasco</td><td>1,498</td></tr>
+                    </table>
+                    <br>Using <strong>GADM Level-3</strong> provides 70x more granularity than regional analysis (~1,874 districts vs 26 regions).
+                `
+            },
+            'forest': {
+                toolCall: 'get_peru_forest_stats(threshold=30)',
+                thinking: ['Downloading Hansen GFC tiles...', 'Processing treecover2000 layer...', 'Calculating loss by year...', 'Aggregating by municipality...'],
+                response: `
+                    <strong>Forest Analysis - Global Forest Watch Data</strong>
+                    <div style="display: flex; gap: 1rem; margin: 1rem 0;">
+                        <div class="stat-box"><div class="number">72.3M</div><div class="label">Forest Area 2000 (ha)</div></div>
+                        <div class="stat-box"><div class="number">2.8M</div><div class="label">Total Loss (ha)</div></div>
+                        <div class="stat-box"><div class="number">3.9%</div><div class="label">Loss Rate</div></div>
+                    </div>
+                    <table>
+                        <tr><th>Region</th><th>Forest 2000</th><th>Loss 2001-2024</th><th>Loss %</th></tr>
+                        <tr><td>Loreto</td><td>35.2M ha</td><td>412,000 ha</td><td>1.2%</td></tr>
+                        <tr><td>Ucayali</td><td>9.8M ha</td><td>523,000 ha</td><td>5.3%</td></tr>
+                        <tr><td>Madre de Dios</td><td>8.1M ha</td><td>198,000 ha</td><td>2.4%</td></tr>
+                        <tr><td>San Martín</td><td>4.2M ha</td><td>385,000 ha</td><td>9.2%</td></tr>
+                        <tr><td>Huánuco</td><td>2.1M ha</td><td>267,000 ha</td><td>12.7%</td></tr>
+                    </table>
+                    <br><strong>Insight:</strong> San Martín and Huánuco show highest deforestation rates despite smaller forest areas.
+                `
+            },
+            'map': {
+                toolCall: 'create_choropleth_map(fires, "n_fires", "Fire Count")',
+                thinking: ['Creating Folium map...', 'Adding choropleth layer...', 'Adding tooltips...', 'Saving to HTML...'],
+                response: `
+                    <strong>Choropleth Map Created</strong><br><br>
+                    Map saved to: <code>./output/map_n_fires_2024-02-24.html</code>
+                    <br><br>
+                    <div style="background: #edf2f7; padding: 1rem; border-radius: 6px; text-align: center;">
+                        🗺️ <strong>Interactive Map Features:</strong>
+                        <ul style="text-align: left; margin: 0.5rem 0 0 1.5rem;">
+                            <li>Hover for municipality details</li>
+                            <li>Color scale: Yellow (low) → Red (high)</li>
+                            <li>Zoom and pan controls</li>
+                            <li>Layer toggle for base maps</li>
+                        </ul>
+                    </div>
+                    <br>
+                    <em>In a live demo, the map would open in a new browser tab.</em>
+                `
+            },
+            'tools': {
+                toolCall: null,
+                thinking: [],
+                response: `
+                    <strong>Available GeoAgent Tools</strong><br><br>
+                    <strong>🤖 Agent Methods (6):</strong>
+                    <ul style="margin: 0.3rem 0 0.8rem 1.5rem; font-size: 0.9rem;">
+                        <li><code>analyze_fires(year)</code> - NASA VIIRS fire analysis</li>
+                        <li><code>analyze_forest()</code> - Global Forest Watch analysis</li>
+                        <li><code>create_choropleth_map()</code> - Interactive Folium map</li>
+                        <li><code>generate_presentation()</code> - Marp slides</li>
+                        <li><code>chat(message)</code> - Natural language interface</li>
+                        <li><code>run_workflow(name)</code> - Predefined pipelines</li>
+                    </ul>
+                    <strong>🔥 Fire Tools (5):</strong>
+                    <ul style="margin: 0.3rem 0 0.8rem 1.5rem; font-size: 0.9rem;">
+                        <li><code>download_viirs_snpp_peru(year)</code></li>
+                        <li><code>fires_clean(df)</code></li>
+                        <li><code>intersect_and_collapse_fires_peru()</code></li>
+                        <li><code>get_peru_fires(year)</code></li>
+                    </ul>
+                    <strong>🗺️ Municipality Tools (5):</strong>
+                    <ul style="margin: 0.3rem 0 0.8rem 1.5rem; font-size: 0.9rem;">
+                        <li><code>download_gadm_boundaries(iso3, level)</code></li>
+                        <li><code>download_peru_districts()</code></li>
+                        <li><code>intersect_and_collapse_municipality()</code></li>
+                        <li><code>aggregate_points_by_district()</code></li>
+                    </ul>
+                    <strong>🌳 Forest Tools (6):</strong>
+                    <ul style="margin: 0.3rem 0 0.8rem 1.5rem; font-size: 0.9rem;">
+                        <li><code>download_hansen_tile(tile, layer)</code></li>
+                        <li><code>get_peru_forest_stats()</code></li>
+                        <li><code>summarize_forest_loss_by_region()</code></li>
+                        <li><code>get_annual_loss_time_series()</code></li>
+                    </ul>
+                `
+            },
+            'download': {
+                toolCall: 'download_peru_districts()',
+                thinking: ['Fetching from GADM database...', 'Parsing GeoJSON...', 'Creating GeoDataFrame...'],
+                response: `
+                    <strong>Peru District Boundaries Downloaded</strong>
+                    <pre>GeoDataFrame: 1,815 rows × 16 columns
+
+Columns:
+- GID_3: District ID (e.g., "PER.1.1.1_1")
+- NAME_3: District name
+- GID_2, NAME_2: Province info
+- GID_1, NAME_1: Region info
+- geometry: MultiPolygon
+
+CRS: EPSG:4326 (WGS84)</pre>
+                    Data source: <code>geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_PER_3.json</code>
+                `
+            },
+            'trend': {
+                toolCall: 'get_annual_loss_time_series(forest_gdf)',
+                thinking: ['Extracting loss_by_year from municipalities...', 'Aggregating annual totals...'],
+                response: `
+                    <strong>Annual Deforestation Trend (2001-2024)</strong>
+                    <table>
+                        <tr><th>Year</th><th>Loss (ha)</th><th>Change</th></tr>
+                        <tr><td>2020</td><td>203,000</td><td>+15%</td></tr>
+                        <tr><td>2021</td><td>187,000</td><td>-8%</td></tr>
+                        <tr><td>2022</td><td>195,000</td><td>+4%</td></tr>
+                        <tr><td>2023</td><td>178,000</td><td>-9%</td></tr>
+                        <tr><td>2024</td><td>156,000</td><td>-12%</td></tr>
+                    </table>
+                    <br><strong>Trend:</strong> Deforestation has decreased 23% since 2020 peak, but remains elevated compared to pre-2015 levels.
+                `
+            }
+        };
+
+        function insertQuery(text) {
+            document.getElementById('userInput').value = text;
+            document.getElementById('userInput').focus();
+        }
+
+        function addMessage(content, isUser = false) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const message = document.createElement('div');
+            message.className = `message ${isUser ? 'user' : 'assistant'}`;
+            message.innerHTML = `
+                <div class="message-avatar">${isUser ? '👤' : '🤖'}</div>
+                <div class="message-content">${content}</div>
+            `;
+            messagesDiv.appendChild(message);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const messagesDiv = document.getElementById('chatMessages');
+            const typing = document.createElement('div');
+            typing.className = 'message assistant';
+            typing.id = 'typingIndicator';
+            typing.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    <div class="typing">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            messagesDiv.appendChild(typing);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+
+        function getResponse(query) {
+            const q = query.toLowerCase();
+
+            if (q.includes('fire') && (q.includes('2024') || q.includes('analyz') || q.includes('region'))) {
+                return responses.fire;
+            } else if (q.includes('municipality') || q.includes('district') || q.includes('top')) {
+                return responses.municipality;
+            } else if (q.includes('forest') || q.includes('deforest') || q.includes('loss')) {
+                if (q.includes('trend') || q.includes('annual') || q.includes('time')) {
+                    return responses.trend;
+                }
+                return responses.forest;
+            } else if (q.includes('map') || q.includes('choropleth') || q.includes('visual')) {
+                return responses.map;
+            } else if (q.includes('tool') || q.includes('available') || q.includes('help') || q.includes('what can')) {
+                return responses.tools;
+            } else if (q.includes('download') || q.includes('boundary') || q.includes('gadm')) {
+                return responses.download;
+            } else {
+                return {
+                    toolCall: null,
+                    thinking: [],
+                    response: `I understand you're asking about: "<em>${query}</em>"<br><br>
+                    I can help with:<br>
+                    • <strong>Fire analysis</strong> - Try "Analyze fires in Peru for 2024"<br>
+                    • <strong>Forest data</strong> - Try "Show forest loss by region"<br>
+                    • <strong>Maps</strong> - Try "Create a choropleth map"<br>
+                    • <strong>Tools</strong> - Try "What tools are available?"<br><br>
+                    Click any quick action below or ask a more specific question!`
+                };
+            }
+        }
+
+        async function sendMessage(text = null) {
+            const input = document.getElementById('userInput');
+            const query = text || input.value.trim();
+
+            if (!query) return;
+
+            // Add user message
+            addMessage(query, true);
+            input.value = '';
+
+            // Add typing indicator
+            addTypingIndicator();
+
+            // Get response
+            const response = getResponse(query);
+
+            // Simulate thinking process
+            await new Promise(r => setTimeout(r, 500));
+
+            if (response.toolCall) {
+                removeTypingIndicator();
+                addMessage(`<div class="tool-call">🔧 <span class="tool-name">Calling tool:</span> <code>${response.toolCall}</code></div>`);
+                addTypingIndicator();
+
+                for (const step of response.thinking) {
+                    await new Promise(r => setTimeout(r, 400));
+                    removeTypingIndicator();
+                    addMessage(`<em style="color: #718096;">⏳ ${step}</em>`);
+                    addTypingIndicator();
+                }
+            }
+
+            await new Promise(r => setTimeout(r, 600));
+            removeTypingIndicator();
+            addMessage(response.response);
+        }
+    </script>
+</body>
+</html>
