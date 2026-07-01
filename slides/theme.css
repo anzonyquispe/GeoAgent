@@ -1,0 +1,51 @@
+.reveal { font-family: 'Segoe UI', Arial, sans-serif; }
+.reveal h1,.reveal h2,.reveal h3 { text-transform: none; letter-spacing:-0.01em; }
+.reveal h1 { color:#0f172a; font-size:1.85em; }
+.reveal h2 { color:#0f172a; font-size:1.3em; margin-bottom:0.35em; }
+.reveal h3 { color:#1d4ed8; font-size:0.95em; margin:0 0 0.15em; }
+.reveal p  { font-size:0.78em; color:#334155; margin:0.3em 0; }
+.reveal li { font-size:0.72em; color:#334155; line-height:1.65; }
+
+/* code blocks — overflow:auto prevents horizontal overflow in Safari */
+.reveal pre { box-shadow:none; border-radius:8px; width:100%; margin:0.4em 0; overflow-x:auto; max-width:100%; }
+.reveal pre code.hljs { font-size:0.47em; padding:0.75em 1em; border-radius:8px; max-height:320px; overflow-x:auto; white-space:pre; }
+.reveal code { background:#f1f5f9; color:#1d4ed8; padding:1px 5px; border-radius:4px; font-size:0.82em; }
+
+/* SVGs — explicit height:auto prevents Safari from over-expanding them */
+.reveal svg { max-width:100%; height:auto; display:block; }
+
+/* badges */
+.badge { display:inline-block; padding:3px 13px; border-radius:20px; font-size:0.48em; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.45em; }
+.b1 { background:#dbeafe; color:#1e40af; }
+.b2 { background:#fef3c7; color:#92400e; }
+.b3 { background:#dcfce7; color:#166534; }
+
+/* layout — min-width:0 on .col is the key Safari flex-overflow fix */
+.cols { display:flex; gap:1.2em; align-items:flex-start; min-width:0; }
+.col  { flex:1; min-width:0; overflow:hidden; }
+
+/* cards */
+.card { border-radius:9px; padding:0.6em 0.9em; border:1.5px solid; margin-bottom:0.45em; }
+.cblue   { border-color:#93c5fd; background:#eff6ff; }
+.corange { border-color:#fcd34d; background:#fffbeb; }
+.cgreen  { border-color:#86efac; background:#f0fdf4; }
+.cgray   { border-color:#e2e8f0; background:#f8fafc; }
+.card h3 { font-size:0.78em; }
+.card p, .card ul { font-size:0.63em; margin:0.1em 0 0; }
+.card li { font-size:1em; }
+
+/* callout boxes */
+.insight { border-left:4px solid #2563eb; background:#eff6ff; padding:0.4em 0.85em; border-radius:0 7px 7px 0; margin-top:0.6em; font-size:0.64em; color:#1e40af; }
+.warn    { border-left:4px solid #ea580c; background:#fff7ed; padding:0.4em 0.85em; border-radius:0 7px 7px 0; margin-top:0.5em; font-size:0.64em; color:#9a3412; }
+
+/* tables */
+.reveal table { font-size:0.62em; width:100%; border-collapse:collapse; }
+.reveal table th { background:#f1f5f9; color:#0f172a; font-weight:700; padding:0.4em 0.75em; border-bottom:2px solid #cbd5e1; }
+.reveal table td { padding:0.38em 0.75em; border-bottom:1px solid #e2e8f0; vertical-align:top; }
+
+/* chip tags */
+.chip { display:inline-block; padding:2px 9px; border-radius:12px; font-size:0.58em; font-weight:600; margin:2px; }
+.chip-blue   { background:#dbeafe; color:#1d4ed8; }
+.chip-green  { background:#dcfce7; color:#166534; }
+.chip-orange { background:#fef3c7; color:#92400e; }
+.chip-purple { background:#f3e8ff; color:#7e22ce; }
