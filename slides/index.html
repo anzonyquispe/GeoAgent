@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Spatial Data with Python</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/white.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<section data-markdown data-separator="^---$">
+<textarea data-template>
+<!--
+  HOW TO ADD A NEW SLIDE
+  ─────────────────────
+  1. Copy the block below and paste it after any existing `---` separator.
+  2. Replace the content with your slide's Markdown (headings, bullets, code fences).
+  3. Save — the browser auto-reloads if you use a local dev server (e.g. `npx serve .`).
+
+  --- (separator)
+  ## My New Slide Title
+  - Bullet one
+  - Bullet two
+-->
+
+<!-- SLIDE 1 · TITLE -->
+
+<div style="text-align:center;padding:1.8em 1em 1em;">
+  <div class="badge b1" style="font-size:0.55em;">Intro to Spatial Analysis · Python</div>
+  <h1 style="margin:0.25em 0 0.2em;">Spatial Data with Python</h1>
+  <p style="font-size:0.85em;color:#64748b;margin:0.5em 0 1.6em;">
+    Points &nbsp;·&nbsp; Lines &nbsp;·&nbsp; Polygons &nbsp;·&nbsp; Rasters &nbsp;·&nbsp; NC Files<br>
+    Choropleth Maps &nbsp;·&nbsp; Heatmaps &nbsp;·&nbsp; Spatial Operations
+  </p>
+  <div style="font-size:0.58em;color:#94a3b8;line-height:2;">
+    Anzony Quispe &nbsp;·&nbsp; 2026<br>
+    <code style="background:#f1f5f9;color:#64748b;font-size:1em;padding:3px 10px;">geopandas · rasterio · xarray · rasterstats</code>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 2 · AGENDA -->
+
+## What we'll cover
+
+<div class="cols" style="margin-top:0.5em;">
+  <div class="col card cblue">
+    <h3>🗺 Part 1 — Data Types</h3>
+    <ul>
+      <li>Points, Lines, Polygons</li>
+      <li>Shapefiles &amp; GeoDataFrames</li>
+      <li>Raster data (.tif)</li>
+      <li>NetCDF data (.nc)</li>
+      <li>Vector vs Raster: the key difference</li>
+    </ul>
+  </div>
+  <div class="col card corange">
+    <h3>🎨 Part 2 — Visualization</h3>
+    <ul>
+      <li>Choropleth maps → polygons</li>
+      <li>Heatmaps → raster files</li>
+    </ul>
+    <br>
+    <h3>⚙️ Part 3 — Operations</h3>
+    <ul>
+      <li>Intersection &amp; Overlay</li>
+      <li>Dissolve &amp; Aggregation</li>
+      <li>Spatial Join</li>
+      <li>Zonal Statistics</li>
+    </ul>
+  </div>
+</div>
+<div class="insight">All examples run in <strong>GeoPandas + rasterio + xarray</strong> — see companion notebook <code>spatial_analysis_python.ipynb</code></div>
+
+---
+
+<!-- SLIDE 3 · TWO WORLDS -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## Two worlds of spatial data
+
+<div class="cols" style="margin-top:0.4em;">
+  <!-- Vector -->
+  <div class="col" style="text-align:center;">
+    <svg viewBox="0 0 220 150" width="100%" style="border-radius:8px;background:#f8fafc;border:1.5px solid #e2e8f0;">
+      <defs><marker id="arr" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 z" fill="#64748b"/></marker></defs>
+      <!-- Point -->
+      <circle cx="38" cy="55" r="13" fill="#ef4444" opacity="0.85"/>
+      <circle cx="38" cy="55" r="5" fill="white"/>
+      <text x="38" y="78" text-anchor="middle" font-size="10" fill="#64748b" font-weight="600">Point</text>
+      <!-- Line -->
+      <polyline points="85,38 102,68 118,48 138,62" stroke="#3b82f6" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="112" y="78" text-anchor="middle" font-size="10" fill="#64748b" font-weight="600">Line</text>
+      <!-- Polygon -->
+      <polygon points="163,30 196,32 200,62 178,72 155,55" fill="#22c55e" fill-opacity="0.35" stroke="#22c55e" stroke-width="2.5"/>
+      <text x="178" y="82" text-anchor="middle" font-size="10" fill="#64748b" font-weight="600">Polygon</text>
+      <!-- label -->
+      <text x="110" y="102" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">VECTOR</text>
+      <text x="110" y="115" text-anchor="middle" font-size="9" fill="#64748b">Discrete shapes with exact boundaries</text>
+      <text x="110" y="127" text-anchor="middle" font-size="8.5" fill="#94a3b8">.shp  .gpkg  .geojson  .parquet</text>
+    </svg>
+    <p style="font-size:0.6em;color:#475569;margin-top:0.3em;">Cities · Roads · Countries · Parcels</p>
+  </div>
+  <!-- Raster -->
+  <div class="col" style="text-align:center;">
+    <svg viewBox="0 0 220 150" width="100%" style="border-radius:8px;background:#f8fafc;border:1.5px solid #e2e8f0;">
+      <!-- 5×4 color grid -->
+      <rect x="18" y="15" width="34" height="26" fill="#fef9c3"/><text x="35" y="31" text-anchor="middle" font-size="8" fill="#78716c">10</text>
+      <rect x="52" y="15" width="34" height="26" fill="#fde68a"/><text x="69" y="31" text-anchor="middle" font-size="8" fill="#78716c">28</text>
+      <rect x="86" y="15" width="34" height="26" fill="#fdba74"/><text x="103" y="31" text-anchor="middle" font-size="8" fill="#78716c">45</text>
+      <rect x="120" y="15" width="34" height="26" fill="#fb923c"/><text x="137" y="31" text-anchor="middle" font-size="8" fill="#fff">63</text>
+      <rect x="154" y="15" width="34" height="26" fill="#ea580c"/><text x="171" y="31" text-anchor="middle" font-size="8" fill="#fff">80</text>
+
+      <rect x="18" y="41" width="34" height="26" fill="#fde68a"/>
+      <rect x="52" y="41" width="34" height="26" fill="#fdba74"/>
+      <rect x="86" y="41" width="34" height="26" fill="#f97316"/>
+      <rect x="120" y="41" width="34" height="26" fill="#ea580c"/>
+      <rect x="154" y="41" width="34" height="26" fill="#c2410c"/>
+
+      <rect x="18" y="67" width="34" height="26" fill="#fdba74"/>
+      <rect x="52" y="67" width="34" height="26" fill="#f97316"/>
+      <rect x="86" y="67" width="34" height="26" fill="#ea580c"/>
+      <rect x="120" y="67" width="34" height="26" fill="#c2410c"/>
+      <rect x="154" y="67" width="34" height="26" fill="#9a3412"/>
+
+      <rect x="18" y="93" width="34" height="26" fill="#f97316"/>
+      <rect x="52" y="93" width="34" height="26" fill="#ea580c"/>
+      <rect x="86" y="93" width="34" height="26" fill="#c2410c"/>
+      <rect x="120" y="93" width="34" height="26" fill="#9a3412"/>
+      <rect x="154" y="93" width="34" height="26" fill="#7c2d12"/>
+
+      <!-- grid lines -->
+      <rect x="18" y="15" width="170" height="104" fill="none" stroke="#e2e8f0" stroke-width="0.8"/>
+      <line x1="52"  y1="15" x2="52"  y2="119" stroke="#e2e8f0" stroke-width="0.8"/>
+      <line x1="86"  y1="15" x2="86"  y2="119" stroke="#e2e8f0" stroke-width="0.8"/>
+      <line x1="120" y1="15" x2="120" y2="119" stroke="#e2e8f0" stroke-width="0.8"/>
+      <line x1="154" y1="15" x2="154" y2="119" stroke="#e2e8f0" stroke-width="0.8"/>
+      <line x1="18" y1="41"  x2="188" y2="41"  stroke="#e2e8f0" stroke-width="0.8"/>
+      <line x1="18" y1="67"  x2="188" y2="67"  stroke="#e2e8f0" stroke-width="0.8"/>
+      <line x1="18" y1="93"  x2="188" y2="93"  stroke="#e2e8f0" stroke-width="0.8"/>
+
+      <text x="103" y="132" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">RASTER / NC</text>
+      <text x="103" y="143" text-anchor="middle" font-size="9" fill="#64748b">Grid of cells · each cell = one value</text>
+    </svg>
+    <p style="font-size:0.6em;color:#475569;margin-top:0.3em;">Elevation · Temperature · Satellite imagery</p>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 4 · VECTOR PRIMITIVES -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## Vector — Points, Lines, Polygons
+
+<div class="cols" style="margin-top:0.5em;gap:0.9em;">
+  <div class="col card cblue" style="text-align:center;">
+    <svg viewBox="0 0 80 55" width="90">
+      <circle cx="40" cy="25" r="15" fill="#ef4444" opacity="0.9"/>
+      <circle cx="40" cy="25" r="6" fill="white"/>
+    </svg>
+    <div style="font-size:0.75em;font-weight:700;color:#ef4444;">Point</div>
+    <div style="font-size:0.62em;color:#475569;margin-top:0.2em;">City · Well · Fire · Tree<br><code>Point(lon, lat)</code></div>
+  </div>
+  <div class="col card cgreen" style="text-align:center;">
+    <svg viewBox="0 0 80 55" width="90">
+      <polyline points="6,48 22,18 42,36 66,10" stroke="#3b82f6" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="6" cy="48" r="4" fill="#3b82f6"/>
+      <circle cx="66" cy="10" r="4" fill="#3b82f6"/>
+    </svg>
+    <div style="font-size:0.75em;font-weight:700;color:#3b82f6;">Line</div>
+    <div style="font-size:0.62em;color:#475569;margin-top:0.2em;">Road · River · Border<br><code>LineString([...])</code></div>
+  </div>
+  <div class="col card corange" style="text-align:center;">
+    <svg viewBox="0 0 80 55" width="90">
+      <polygon points="40,5 72,22 62,50 18,50 8,22" fill="#22c55e" fill-opacity="0.4" stroke="#22c55e" stroke-width="3"/>
+    </svg>
+    <div style="font-size:0.75em;font-weight:700;color:#22c55e;">Polygon</div>
+    <div style="font-size:0.62em;color:#475569;margin-top:0.2em;">Country · District · Lake<br><code>Polygon([...])</code></div>
+  </div>
+</div>
+
+```python
+from shapely.geometry import Point, LineString, Polygon
+import geopandas as gpd
+
+pt = Point(-77.04, -12.05)                 # Lima, Peru
+ln = LineString([(0,0), (1,1), (2,0)])
+pg = Polygon([(0,0), (3,0), (3,2), (0,2)])
+
+# A GeoDataFrame = table with a geometry column
+gdf = gpd.GeoDataFrame({"name": ["Lima"]}, geometry=[pt], crs="EPSG:4326")
+```
+
+<div class="insight">Each feature is a <strong>row</strong> in a GeoDataFrame — geometry + any number of attribute columns (name, population, area …)</div>
+
+---
+
+<!-- SLIDE 5 · SHAPEFILES & GEODATAFRAME -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## Shapefiles &amp; GeoDataFrames
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col">
+    <p style="font-weight:600;font-size:0.72em;color:#0f172a;margin:0 0 0.3em;">A Shapefile is actually 4+ files:</p>
+    <div class="card cgray" style="font-size:0.65em;line-height:2;">
+      <code>.shp</code> — geometry coordinates<br>
+      <code>.dbf</code> — attribute table (columns)<br>
+      <code>.shx</code> — spatial index<br>
+      <code>.prj</code> — CRS / projection info
+    </div>
+    <p style="font-weight:600;font-size:0.65em;color:#64748b;margin:0.6em 0 0.2em;">Modern alternatives (prefer these):</p>
+    <div style="font-size:0.62em;line-height:1.9;">
+      <code>.gpkg</code> &nbsp;GeoPackage — single file ✅<br>
+      <code>.geojson</code> — text, web-friendly<br>
+      <code>.parquet</code> — fastest for large data
+    </div>
+  </div>
+  <div class="col">
+
+```python
+import geopandas as gpd
+
+# Same API for every format
+gdf = gpd.read_file("countries.shp")
+gdf = gpd.read_file("countries.gpkg")
+gdf = gpd.read_file("countries.geojson")
+
+print(gdf.crs)       # always check!
+print(gdf.shape)     # rows × columns
+gdf.head()           # first 5 rows
+
+# Write out
+gdf.to_file("out.gpkg", driver="GPKG")
+```
+
+<div class="warn">Always verify <code>gdf.crs</code> right after loading — a missing CRS means wrong distances and broken overlays.</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 6 · CRS -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## CRS — Don't Skip This
+
+<p style="font-size:0.74em;">A CRS tells software <strong>how to interpret coordinates</strong>. Get it wrong → wrong distances, broken overlays.</p>
+
+| Family | Units | Example | Use for |
+|---|---|---|---|
+| **Geographic** | degrees | `EPSG:4326` (WGS84) | Data storage, web APIs |
+| **Projected** | meters | `EPSG:32718` (UTM 18S) | Distance, area, buffers |
+
+```python
+gdf.crs                              # check current CRS
+gdf_m = gdf.to_crs("EPSG:32718")    # reproject to meters (Peru)
+
+# ❌ WRONG — degrees, not meaningful
+gdf.geometry.distance(other)
+
+# ✅ RIGHT — reproject first
+gdf_m.geometry.distance(other_m)    # result in meters
+gdf_m.geometry.area                 # result in m²
+```
+
+<div class="insight">
+  Three rules: &nbsp;① every layer must have a CRS &nbsp;② distance/area needs a projected CRS &nbsp;③ all layers in an analysis must share the same CRS
+</div>
+
+---
+
+<!-- SLIDE 7 · BUFFERS -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## Buffers — Every point within distance *d*
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="text-align:center;">
+    <svg viewBox="0 0 210 170" width="100%">
+      <!-- Point buffer -->
+      <circle cx="52" cy="68" r="46" fill="#3b82f6" fill-opacity="0.14" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,3"/>
+      <circle cx="52" cy="68" r="9"  fill="#ef4444"/>
+      <circle cx="52" cy="68" r="3.5" fill="white"/>
+      <text x="52" y="20"  text-anchor="middle" font-size="9.5" fill="#3b82f6" font-weight="700">d = 500 m</text>
+      <text x="52" y="127" text-anchor="middle" font-size="9"   fill="#64748b">point buffer</text>
+      <text x="52" y="138" text-anchor="middle" font-size="8.5" fill="#94a3b8">"fires within 500 m"</text>
+
+      <!-- Line buffer -->
+      <rect x="108" y="35" width="90" height="66" rx="33" fill="#22c55e" fill-opacity="0.14" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,3"/>
+      <line x1="120" y1="68" x2="186" y2="68" stroke="#1d4ed8" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="120" cy="68" r="5" fill="#1d4ed8"/>
+      <circle cx="186" cy="68" r="5" fill="#1d4ed8"/>
+      <text x="153" y="20"  text-anchor="middle" font-size="9.5" fill="#22c55e" font-weight="700">d = 100 m</text>
+      <text x="153" y="127" text-anchor="middle" font-size="9"   fill="#64748b">line buffer</text>
+      <text x="153" y="138" text-anchor="middle" font-size="8.5" fill="#94a3b8">"road corridor"</text>
+
+      <!-- CRS warning at bottom -->
+      <rect x="10" y="148" width="190" height="17" rx="4" fill="#fff7ed"/>
+      <text x="105" y="160" text-anchor="middle" font-size="8.5" fill="#9a3412">⚠ Distance is in CRS units — always reproject to meters first</text>
+    </svg>
+  </div>
+  <div class="col">
+    <div class="card cblue" style="margin-bottom:0.45em;">
+      <h3>What is a buffer?</h3>
+      <p>All locations within distance <strong>d</strong> of a geometry. Works on points, lines, and polygons.</p>
+    </div>
+    <div class="card corange" style="margin-bottom:0.45em;">
+      <h3>Common uses</h3>
+      <ul>
+        <li>"All homes within 500 m of a fire"</li>
+        <li>"1 km exclusion zone around a protected area"</li>
+        <li>Convert points → polygons for spatial joins</li>
+      </ul>
+    </div>
+
+```python
+# Reproject to meters first (always!)
+fires_m = fires.to_crs("EPSG:32718")   # UTM 18S, meters
+
+# 10 km buffer around each fire point
+fires_m["buf_10km"] = fires_m.geometry.buffer(10_000)
+
+# Plot the buffers, then the points on top
+ax = fires_m.set_geometry("buf_10km").plot(
+        alpha=0.2, edgecolor="orange", color="orange")
+fires_m.plot(ax=ax, color="red", markersize=2)
+```
+
+<div class="warn">Buffer distance is in <strong>CRS units</strong>. In EPSG:4326 (degrees) it is meaningless — always reproject to a metric CRS first.</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 8 · RASTER DATA -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## Raster Data — The Grid World
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="flex:1.1;text-align:center;">
+    <svg viewBox="0 0 230 185" width="100%">
+      <defs>
+        <marker id="arr2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 z" fill="#ef4444"/>
+        </marker>
+        <linearGradient id="cb" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#1e40af"/>
+          <stop offset="45%"  stop-color="#22c55e"/>
+          <stop offset="100%" stop-color="#b45309"/>
+        </linearGradient>
+      </defs>
+      <!-- 4×4 colored cells with elevation values -->
+      <rect x="15" y="15" width="38" height="30" fill="#b3d9ff"/><text x="34" y="33" text-anchor="middle" font-size="9" fill="#1e3a5f">200</text>
+      <rect x="53" y="15" width="38" height="30" fill="#78b8e8"/><text x="72" y="33" text-anchor="middle" font-size="9" fill="#1e3a5f">280</text>
+      <rect x="91" y="15" width="38" height="30" fill="#5ca8dc"/><text x="110" y="33" text-anchor="middle" font-size="9" fill="#fff">350</text>
+      <rect x="129" y="15" width="38" height="30" fill="#3b82f6"/><text x="148" y="33" text-anchor="middle" font-size="9" fill="#fff">420</text>
+
+      <rect x="15" y="45" width="38" height="30" fill="#c8e6a0"/><text x="34" y="63" text-anchor="middle" font-size="9" fill="#1e3a5f">180</text>
+      <rect x="53" y="45" width="38" height="30" fill="#8cc460"/><text x="72" y="63" text-anchor="middle" font-size="9" fill="#1e3a5f">260</text>
+      <rect x="91" y="45" width="38" height="30" fill="#6db040"/><text x="110" y="63" text-anchor="middle" font-size="9" fill="#fff">310</text>
+      <rect x="129" y="45" width="38" height="30" fill="#4d9020"/><text x="148" y="63" text-anchor="middle" font-size="9" fill="#fff">380</text>
+
+      <rect x="15" y="75" width="38" height="30" fill="#f7e07c"/><text x="34" y="93" text-anchor="middle" font-size="9" fill="#1e3a5f">140</text>
+      <rect x="53" y="75" width="38" height="30" fill="#e8a820"/><text x="72" y="93" text-anchor="middle" font-size="9" fill="#1e3a5f">190</text>
+      <rect x="91" y="75" width="38" height="30" fill="#d4880c"/><text x="110" y="93" text-anchor="middle" font-size="9" fill="#fff">230</text>
+      <rect x="129" y="75" width="38" height="30" fill="#b86000"/><text x="148" y="93" text-anchor="middle" font-size="9" fill="#fff">280</text>
+
+      <rect x="15" y="105" width="38" height="30" fill="#e8aa90"/><text x="34" y="123" text-anchor="middle" font-size="9" fill="#1e3a5f">100</text>
+      <rect x="53" y="105" width="38" height="30" fill="#c86838"/><text x="72" y="123" text-anchor="middle" font-size="9" fill="#fff">140</text>
+      <rect x="91" y="105" width="38" height="30" fill="#b84818"/><text x="110" y="123" text-anchor="middle" font-size="9" fill="#fff">165</text>
+      <rect x="129" y="105" width="38" height="30" fill="#9a3412"/><text x="148" y="123" text-anchor="middle" font-size="9" fill="#fff">200</text>
+
+      <!-- grid border + lines -->
+      <rect x="15" y="15" width="152" height="120" fill="none" stroke="#1e293b" stroke-width="1.2"/>
+      <line x1="53"  y1="15" x2="53"  y2="135" stroke="#1e293b" stroke-width="0.6"/>
+      <line x1="91"  y1="15" x2="91"  y2="135" stroke="#1e293b" stroke-width="0.6"/>
+      <line x1="129" y1="15" x2="129" y2="135" stroke="#1e293b" stroke-width="0.6"/>
+      <line x1="15"  y1="45" x2="167" y2="45"  stroke="#1e293b" stroke-width="0.6"/>
+      <line x1="15"  y1="75" x2="167" y2="75"  stroke="#1e293b" stroke-width="0.6"/>
+      <line x1="15"  y1="105" x2="167" y2="105" stroke="#1e293b" stroke-width="0.6"/>
+
+      <!-- resolution arrow -->
+      <line x1="15" y1="150" x2="53" y2="150" stroke="#ef4444" stroke-width="1.8" marker-end="url(#arr2)"/>
+      <text x="34" y="164" text-anchor="middle" font-size="9" fill="#ef4444" font-weight="600">resolution = 30 m</text>
+      <text x="34" y="175" text-anchor="middle" font-size="8" fill="#94a3b8">1 cell = 1 value</text>
+
+      <!-- colorbar -->
+      <rect x="180" y="15" width="14" height="120" fill="url(#cb)" rx="3"/>
+      <text x="198" y="19" font-size="8" fill="#64748b" dominant-baseline="hanging">high</text>
+      <text x="198" y="133" font-size="8" fill="#64748b">low</text>
+      <text x="187" y="155" text-anchor="middle" font-size="8" fill="#64748b">band 1</text>
+    </svg>
+  </div>
+  <div class="col">
+    <div class="card cblue" style="margin-bottom:0.45em;">
+      <h3>Cell = pixel = value</h3>
+      <p>Each cell stores <strong>one number</strong>: elevation, temperature, NDVI, rainfall …</p>
+    </div>
+    <div class="card corange" style="margin-bottom:0.45em;">
+      <h3>Resolution</h3>
+      <p>Cell size on the ground (e.g. 30 m). Finer resolution → more detail → larger file size.</p>
+    </div>
+    <div class="card cgreen" style="margin-bottom:0.45em;">
+      <h3>Bands</h3>
+      <p>Multiple layers stacked. RGB image = 3 bands. Landsat 8 = 11 bands. (ArcGIS, 2024)</p>
+    </div>
+
+```python
+import rioxarray as rxr
+r = rxr.open_rasterio("elev.tif").squeeze()
+print(r.shape)        # (rows, cols)
+r.plot(cmap="terrain")
+```
+
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 9 · NETCDF -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## NetCDF (.nc) — Multi-Dimensional Data
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="flex:1.05;text-align:center;">
+    <svg viewBox="0 0 210 175" width="100%">
+      <!-- Stacked layer diagram for time × lat × lon -->
+      <!-- Layer 3 back -->
+      <polygon points="35,42 120,42 140,22 55,22" fill="#bfdbfe" stroke="#93c5fd" stroke-width="1.2"/>
+      <polygon points="120,42 140,22 140,82 120,102" fill="#93c5fd" stroke="#93c5fd" stroke-width="1.2"/>
+      <text x="88" y="35" text-anchor="middle" font-size="9" fill="#1e40af">Mar</text>
+      <!-- Layer 2 middle -->
+      <polygon points="24,68 109,68 129,48 44,48" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.2"/>
+      <polygon points="109,68 129,48 129,108 109,128" fill="#bfdbfe" stroke="#93c5fd" stroke-width="1.2"/>
+      <text x="77" y="62" text-anchor="middle" font-size="9" fill="#1e40af">Feb</text>
+      <!-- Layer 1 front -->
+      <polygon points="13,94 98,94 118,74 33,74" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.8"/>
+      <polygon points="13,94 13,140 98,140 98,94" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.8"/>
+      <polygon points="98,94 118,74 118,120 98,140" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1.8"/>
+      <text x="56" y="120" text-anchor="middle" font-size="9" fill="#1e40af">Jan</text>
+
+      <!-- Axis annotations -->
+      <text x="148" y="95"  font-size="10" font-weight="bold" fill="#1d4ed8">time</text>
+      <text x="148" y="108" font-size="9"  fill="#64748b">Jan→Feb→Mar</text>
+
+      <text x="15" y="155" font-size="9" fill="#64748b">lon →</text>
+      <text x="100" y="88" font-size="9" fill="#64748b">↑ lat</text>
+
+      <text x="68" y="170" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">temperature(time, lat, lon)</text>
+    </svg>
+  </div>
+  <div class="col">
+    <div class="card cblue" style="margin-bottom:0.45em;">
+      <h3>N-dimensional labelled arrays</h3>
+      <p>Dimensions: time × lat × lon × depth. All named, all indexed. Lazy-loaded.</p>
+    </div>
+    <p style="font-size:0.63em;color:#475569;margin:0.3em 0 0.2em;">
+      Common datasets: ERA5, CHIRPS, CMIP6, MODIS, Landsat archives
+    </p>
+
+```python
+import xarray as xr
+
+ds = xr.open_dataset("climate.nc")
+print(ds)                     # shape, dims, vars
+
+# Select one variable
+temp = ds["temperature"]      # shape: (12, 180, 360)
+
+# Mean over time → single 2D map
+temp.mean("time").plot(cmap="coolwarm")
+```
+
+<div class="insight">Why NC? One file holds <strong>years of global data</strong> — e.g. 12 months × 720 × 1440 grid points = 12 M values in a compact binary.</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 10 · KEY INSIGHT TABLE -->
+
+<div class="badge b1">Part 1 · Data Types</div>
+
+## Vector vs Raster — The Key Insight
+
+| | Vector | Raster / NC |
+|---|---|---|
+| **Structure** | Exact coordinates per feature | Regular grid of equal-size cells |
+| **Best for** | Discrete objects: cities, roads, parcels | Continuous phenomena: temperature, elevation, rain |
+| **File size scales with** | Number of features (rows) | Grid dimensions (fixed cost per resolution) |
+| **Example** | 10 countries = 10 rows | Global 1 km grid = 180 × 360 cells, always |
+| **File formats** | .shp, .gpkg, .geojson, .parquet | .tif (GeoTIFF), .nc (NetCDF), .h5 (HDF5) |
+| **Python library** | geopandas, shapely | rasterio, rioxarray, xarray |
+
+<div class="insight" style="margin-top:0.5em;">
+  <strong>Raster is efficient for dense, continuous coverage.</strong> A 1° global temperature grid has only 180 × 360 = 64,800 cells — regardless of how many "features" exist. Storing the same data as vector polygons would cost orders of magnitude more. (ArcGIS, 2024)
+</div>
+
+---
+
+<!-- SLIDE 11 · PART 2 SECTION HEADER -->
+
+<!-- .slide: data-background-color="#0f172a" -->
+
+<div style="text-align:center;padding:1.5em 1em;">
+  <div class="badge b2" style="background:#b45309;color:#fde68a;font-size:0.58em;">Part 2</div>
+  <h2 style="color:#f8fafc;font-size:1.9em;margin-top:0.25em;">Presenting Your Results</h2>
+  <p style="color:#94a3b8;font-size:0.85em;margin-top:0.5em;">
+    Choropleth maps &nbsp;→&nbsp; polygons<br>
+    Heatmaps &nbsp;→&nbsp; raster files
+  </p>
+  <p style="color:#64748b;font-size:0.6em;margin-top:1.2em;">using geopandas · rioxarray · xarray · matplotlib</p>
+</div>
+
+---
+
+<!-- SLIDE 12 · CHOROPLETH MAPS -->
+
+<div class="badge b2">Part 2 · Visualization</div>
+
+## Choropleth Maps
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="text-align:center;">
+    <svg viewBox="0 0 215 155" width="100%" style="border-radius:8px;background:#f0f9ff;border:1.5px solid #bae6fd;">
+      <!-- Fake country shapes colored by attribute -->
+      <polygon points="90,18 152,14 167,44 158,78 122,83 84,67 78,40" fill="#b91c1c" opacity="0.85"/>
+      <polygon points="52,14 88,11 83,48 52,51 36,32" fill="#ea580c" opacity="0.85"/>
+      <polygon points="52,58 83,52 88,104 74,122 42,118 34,82" fill="#f97316" opacity="0.85"/>
+      <polygon points="6,20 35,17 33,58 13,82 4,60" fill="#fbbf24" opacity="0.85"/>
+      <polygon points="6,92 30,88 27,132 10,136 3,112" fill="#fde68a" opacity="0.85"/>
+      <polygon points="162,92 190,87 196,118 168,121" fill="#fdba74" opacity="0.85"/>
+
+      <!-- Colorbar -->
+      <defs><linearGradient id="cbar" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#b91c1c"/>
+        <stop offset="50%"  stop-color="#f97316"/>
+        <stop offset="100%" stop-color="#fef9c3"/>
+      </linearGradient></defs>
+      <rect x="197" y="18" width="13" height="118" fill="url(#cbar)" rx="3"/>
+      <text x="193" y="21" text-anchor="end" font-size="8" fill="#64748b">high</text>
+      <text x="193" y="140" text-anchor="end" font-size="8" fill="#64748b">low</text>
+
+      <text x="100" y="148" text-anchor="middle" font-size="10" font-weight="bold" fill="#0f172a">Population by Continent</text>
+    </svg>
+    <p style="font-size:0.58em;color:#475569;margin-top:0.3em;">Polygon fill color = numeric attribute value</p>
+  </div>
+  <div class="col">
+    <div class="card corange" style="margin-bottom:0.45em;">
+      <h3>What is a choropleth?</h3>
+      <p>Polygons colored by a <strong>numeric attribute</strong> (population, income, rainfall …). The darker/brighter the color, the higher the value.</p>
+    </div>
+
+```python
+import geopandas as gpd
+
+world = gpd.read_file("countries.gpkg")
+
+# Dissolve by continent → one polygon each
+continents = world.dissolve(
+    by="CONTINENT",
+    aggfunc={"POP_EST": "sum"}
+)
+
+# One line → choropleth map
+continents.plot(
+    column="POP_EST",   # color by this column
+    cmap="YlOrRd",      # colormap
+    legend=True,
+    edgecolor="k",
+    linewidth=0.4
+)
+```
+
+<div class="insight">AutoGIS (2024): <code>.plot(column=..., cmap=...)</code> — that is the full API. Pick any matplotlib colormap.</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 13 · HEATMAPS FOR RASTERS -->
+
+<div class="badge b2">Part 2 · Visualization</div>
+
+## Heatmaps for Raster Data
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="text-align:center;">
+    <svg viewBox="0 0 215 155" width="100%" style="border-radius:8px;background:#f8fafc;border:1.5px solid #e2e8f0;">
+      <defs>
+        <radialGradient id="hg" cx="45%" cy="40%" r="55%">
+          <stop offset="0%"   stop-color="#dc2626"/>
+          <stop offset="25%"  stop-color="#ea580c"/>
+          <stop offset="50%"  stop-color="#f97316"/>
+          <stop offset="70%"  stop-color="#fbbf24"/>
+          <stop offset="88%"  stop-color="#fde68a"/>
+          <stop offset="100%" stop-color="#eff6ff"/>
+        </radialGradient>
+        <linearGradient id="hbar" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#dc2626"/>
+          <stop offset="33%"  stop-color="#f97316"/>
+          <stop offset="66%"  stop-color="#fbbf24"/>
+          <stop offset="100%" stop-color="#eff6ff"/>
+        </linearGradient>
+      </defs>
+      <rect x="10" y="10" width="175" height="125" fill="url(#hg)" rx="5"/>
+      <rect x="10" y="10" width="175" height="125" fill="none" stroke="#e2e8f0" stroke-width="1" rx="5"/>
+      <rect x="192" y="10" width="13" height="125" fill="url(#hbar)" rx="3"/>
+      <text x="188" y="14" text-anchor="end" font-size="8" fill="#64748b">35°C</text>
+      <text x="188" y="138" text-anchor="end" font-size="8" fill="#64748b">15°C</text>
+      <text x="97" y="150" text-anchor="middle" font-size="10" font-weight="bold" fill="#0f172a">Temperature Raster · cmap="hot"</text>
+    </svg>
+    <p style="font-size:0.58em;color:#475569;margin-top:0.3em;">Cell value → color via a continuous colormap</p>
+  </div>
+  <div class="col">
+    <div class="card cblue" style="margin-bottom:0.45em;">
+      <h3>Raster value → color gradient</h3>
+      <p>Each cell's value is mapped to a color. Works for any continuous variable: elevation, NDVI, temperature, precipitation …</p>
+    </div>
+
+```python
+import xarray as xr
+import rioxarray as rxr
+
+# From NetCDF
+ds = xr.open_dataset("climate.nc")
+ds["temperature"].mean("time").plot(
+    cmap="coolwarm",   # or "hot", "terrain", "RdYlBu_r"
+    robust=True        # ignores outliers
+)
+
+# From GeoTIFF
+r = rxr.open_rasterio("elevation.tif").squeeze()
+r.plot(cmap="terrain")
+```
+
+<div class="insight"><code>robust=True</code> clips colorscale to 2nd–98th percentile — essential for satellite data with NoData spikes.</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 14 · PART 3 SECTION HEADER -->
+
+<!-- .slide: data-background-color="#0f172a" -->
+
+<div style="text-align:center;padding:1.5em 1em;">
+  <div class="badge b3" style="background:#15803d;color:#bbf7d0;font-size:0.58em;">Part 3</div>
+  <h2 style="color:#f8fafc;font-size:1.9em;margin-top:0.25em;">Spatial Operations</h2>
+  <p style="color:#94a3b8;font-size:0.85em;margin-top:0.5em;">
+    Intersection &amp; Overlay &nbsp;·&nbsp; Dissolve<br>
+    Spatial Join &nbsp;·&nbsp; Zonal Statistics
+  </p>
+  <p style="color:#64748b;font-size:0.6em;margin-top:1.2em;">using geopandas · rasterstats</p>
+</div>
+
+---
+
+<!-- SLIDE 15 · INTERSECTION & OVERLAY -->
+
+<div class="badge b3">Part 3 · Operations</div>
+
+## Intersection &amp; Overlay
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="flex:0.95;text-align:center;">
+    <svg viewBox="0 0 200 165" width="100%">
+      <!-- circle A -->
+      <circle cx="78"  cy="75" r="58" fill="#3b82f6" fill-opacity="0.22" stroke="#3b82f6" stroke-width="2.2"/>
+      <!-- circle B -->
+      <circle cx="128" cy="75" r="58" fill="#22c55e" fill-opacity="0.22" stroke="#22c55e" stroke-width="2.2"/>
+      <!-- intersection highlight via clip path -->
+      <defs>
+        <clipPath id="ca"><circle cx="78"  cy="75" r="58"/></clipPath>
+        <clipPath id="cb2"><circle cx="128" cy="75" r="58"/></clipPath>
+      </defs>
+      <circle cx="128" cy="75" r="58" fill="#f97316" fill-opacity="0.55" clip-path="url(#ca)"/>
+
+      <!-- labels -->
+      <text x="58"  y="78" text-anchor="middle" font-size="14" font-weight="bold" fill="#1d4ed8">A</text>
+      <text x="148" y="78" text-anchor="middle" font-size="14" font-weight="bold" fill="#15803d">B</text>
+      <text x="103" y="75" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff" style="paint-order:stroke" stroke="#ea580c" stroke-width="1">A ∩ B</text>
+
+      <!-- legend -->
+      <rect x="10"  y="148" width="10" height="8" fill="#f97316" fill-opacity="0.8" rx="2"/>
+      <text x="25"  y="156" font-size="9" fill="#64748b">intersection (area in both)</text>
+      <rect x="112" y="148" width="10" height="8" fill="#3b82f6" fill-opacity="0.3" rx="2"/>
+      <text x="127" y="156" font-size="9" fill="#64748b">difference (A only)</text>
+    </svg>
+    <p style="font-size:0.58em;color:#475569;">e.g. South America ∩ equator band = tropical South America</p>
+  </div>
+  <div class="col">
+    <div style="margin-bottom:0.35em;">
+      <span class="chip chip-blue">intersection</span>
+      <span class="chip chip-green">union</span>
+      <span class="chip chip-orange">difference</span>
+      <span class="chip chip-purple">symmetric_difference</span>
+    </div>
+
+```python
+import geopandas as gpd
+from shapely.geometry import box
+
+sa = gpd.read_file("south_america.gpkg")
+equator = gpd.GeoDataFrame(
+    geometry=[box(-180, -5, 180, 5)],
+    crs="EPSG:4326"
+)
+
+# Area in BOTH layers
+tropical = gpd.overlay(sa, equator,
+                       how="intersection")
+tropical.plot(color="orange")
+
+# SA minus the equator band
+rest = gpd.overlay(sa, equator,
+                   how="difference")
+```
+
+<div class="warn">Both layers must share the <strong>same CRS</strong> before calling overlay. (GeoPandas docs; AutoGIS, 2024)</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 16 · DISSOLVE & AGGREGATION -->
+
+<div class="badge b3">Part 3 · Operations</div>
+
+## Dissolve &amp; Aggregation
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="flex:0.95;text-align:center;">
+    <svg viewBox="0 0 200 165" width="100%">
+      <!-- Before: many small polygons on left -->
+      <text x="50" y="14" text-anchor="middle" font-size="9.5" fill="#64748b" font-weight="700">Before</text>
+      <rect x="8"  y="18" width="26" height="20" fill="#93c5fd" stroke="white" stroke-width="1.5" rx="2"/>
+      <rect x="34" y="18" width="20" height="20" fill="#60a5fa" stroke="white" stroke-width="1.5" rx="2"/>
+      <rect x="54" y="18" width="28" height="20" fill="#3b82f6" stroke="white" stroke-width="1.5" rx="2"/>
+      <rect x="8"  y="38" width="36" height="20" fill="#2563eb" stroke="white" stroke-width="1.5" rx="2"/>
+      <rect x="44" y="38" width="38" height="20" fill="#1d4ed8" stroke="white" stroke-width="1.5" rx="2"/>
+      <rect x="8"  y="58" width="48" height="20" fill="#1e40af" stroke="white" stroke-width="1.5" rx="2"/>
+      <rect x="56" y="58" width="26" height="20" fill="#1e3a8a" stroke="white" stroke-width="1.5" rx="2"/>
+      <!-- small label values -->
+      <text x="21"  y="31" text-anchor="middle" font-size="7" fill="#fff">1M</text>
+      <text x="44"  y="31" text-anchor="middle" font-size="7" fill="#fff">3M</text>
+      <text x="68"  y="31" text-anchor="middle" font-size="7" fill="#fff">2M</text>
+      <text x="26"  y="51" text-anchor="middle" font-size="7" fill="#fff">5M</text>
+      <text x="63"  y="51" text-anchor="middle" font-size="7" fill="#fff">4M</text>
+      <text x="32"  y="71" text-anchor="middle" font-size="7" fill="#fff">6M</text>
+      <text x="69"  y="71" text-anchor="middle" font-size="7" fill="#fff">3M</text>
+
+      <!-- Arrow -->
+      <text x="100" y="55" text-anchor="middle" font-size="24" fill="#94a3b8">→</text>
+
+      <!-- After: one merged polygon on right -->
+      <text x="155" y="14" text-anchor="middle" font-size="9.5" fill="#64748b" font-weight="700">After</text>
+      <rect x="118" y="18" width="78" height="62" fill="#2563eb" fill-opacity="0.38" stroke="#2563eb" stroke-width="2.2" rx="5"/>
+      <text x="157" y="51" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="bold">REGION</text>
+      <text x="157" y="64" text-anchor="middle" font-size="9" fill="#1e40af">sum = 24M</text>
+
+      <!-- Explanation below -->
+      <line x1="10" y1="100" x2="190" y2="100" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="100" y="115" text-anchor="middle" font-size="10" fill="#0f172a">dissolve(by="region", aggfunc="sum")</text>
+      <text x="100" y="130" text-anchor="middle" font-size="9" fill="#64748b">Merge polygons → aggregate numeric columns</text>
+      <text x="100" y="143" text-anchor="middle" font-size="9" fill="#64748b">sum · mean · max · count</text>
+    </svg>
+  </div>
+  <div class="col">
+    <div class="card cgreen" style="margin-bottom:0.45em;">
+      <h3>Dissolve = spatial group-by</h3>
+      <p>Merge all polygons that share a common attribute value, and summarize numeric columns at the same time.</p>
+    </div>
+
+```python
+world = gpd.read_file("countries.gpkg")
+
+# Merge countries → continents
+# Sum population, average GDP
+continents = world.dissolve(
+    by="CONTINENT",
+    aggfunc={
+        "POP_EST": "sum",
+        "GDP":     "mean"
+    }
+)
+# One row per continent, geometry merged
+continents.plot(column="POP_EST",
+                cmap="YlOrRd", legend=True)
+
+# Reverse: split MultiPolygon → parts
+parts = continents.explode(index_parts=False)
+```
+
+<div class="insight">GeoPandas docs: <code>aggfunc</code> accepts any pandas function — <code>"sum"</code>, <code>"mean"</code>, <code>"count"</code>, or a custom lambda.</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 17 · SPATIAL JOIN -->
+
+<div class="badge b3">Part 3 · Operations</div>
+
+## Spatial Join
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="flex:0.9;text-align:center;">
+    <svg viewBox="0 0 200 160" width="100%">
+      <!-- Polygon A -->
+      <rect x="8"  y="15" width="82" height="130" fill="#dcfce7" stroke="#22c55e" stroke-width="2" rx="5"/>
+      <!-- Polygon B -->
+      <rect x="108" y="15" width="82" height="130" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="5"/>
+      <text x="49"  y="152" text-anchor="middle" font-size="9" fill="#166534" font-weight="700">Country A</text>
+      <text x="149" y="152" text-anchor="middle" font-size="9" fill="#1d4ed8" font-weight="700">Country B</text>
+
+      <!-- Points in A (get "Country A" label) -->
+      <circle cx="30"  cy="48"  r="8" fill="#ef4444"/><circle cx="30"  cy="48"  r="3" fill="#fff"/>
+      <circle cx="58"  cy="82"  r="8" fill="#ef4444"/><circle cx="58"  cy="82"  r="3" fill="#fff"/>
+      <circle cx="35"  cy="120" r="8" fill="#ef4444"/><circle cx="35"  cy="120" r="3" fill="#fff"/>
+
+      <!-- Points in B -->
+      <circle cx="128" cy="38"  r="8" fill="#ef4444"/><circle cx="128" cy="38"  r="3" fill="#fff"/>
+      <circle cx="162" cy="78"  r="8" fill="#ef4444"/><circle cx="162" cy="78"  r="3" fill="#fff"/>
+      <circle cx="138" cy="122" r="8" fill="#ef4444"/><circle cx="138" cy="122" r="3" fill="#fff"/>
+
+      <!-- divider -->
+      <line x1="100" y1="15" x2="100" y2="145" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,3"/>
+    </svg>
+  </div>
+  <div class="col">
+    <div class="card cblue" style="margin-bottom:0.45em;">
+      <h3>Which polygon does each point fall in?</h3>
+      <p>Adds polygon attributes (country name, continent, population …) to each point — <strong>no shared key needed, only geometry.</strong></p>
+    </div>
+
+```python
+cities = gpd.read_file("cities.gpkg")
+world  = gpd.read_file("countries.gpkg")
+
+# Which country is each city in?
+joined = gpd.sjoin(
+    cities, world,
+    predicate="within",  # or "intersects"
+    how="left"
+)
+joined[["city", "country", "continent"]]
+
+# Nearest feature
+gpd.sjoin_nearest(
+    fires.to_crs(32718),
+    cities.to_crs(32718),
+    distance_col="dist_m"
+)
+```
+
+<div class="insight">Uses an R-tree spatial index internally — fast even on millions of points. (GeoPandas docs)</div>
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 18 · ZONAL STATISTICS -->
+
+<div class="badge b3">Part 3 · Operations</div>
+
+## Zonal Statistics — Raster → Polygon
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="flex:1.0;text-align:center;">
+    <svg viewBox="0 0 210 165" width="100%">
+      <defs>
+        <linearGradient id="zg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stop-color="#fde68a"/>
+          <stop offset="40%"  stop-color="#fdba74"/>
+          <stop offset="70%"  stop-color="#fb923c"/>
+          <stop offset="100%" stop-color="#c2410c"/>
+        </linearGradient>
+      </defs>
+      <!-- Raster background -->
+      <rect x="8" y="8" width="186" height="118" fill="url(#zg)" rx="4"/>
+      <!-- Subtle grid lines on raster -->
+      <line x1="55"  y1="8"  x2="55"  y2="126" stroke="rgba(255,255,255,0.25)" stroke-width="0.7"/>
+      <line x1="102" y1="8"  x2="102" y2="126" stroke="rgba(255,255,255,0.25)" stroke-width="0.7"/>
+      <line x1="149" y1="8"  x2="149" y2="126" stroke="rgba(255,255,255,0.25)" stroke-width="0.7"/>
+      <line x1="8"   y1="55" x2="194" y2="55"  stroke="rgba(255,255,255,0.25)" stroke-width="0.7"/>
+      <line x1="8"   y1="102" x2="194" y2="102" stroke="rgba(255,255,255,0.25)" stroke-width="0.7"/>
+
+      <!-- Zone polygons overlaid -->
+      <rect x="8"   y="8"   width="94" height="94" fill="none" stroke="#1d4ed8" stroke-width="2.5" rx="3"/>
+      <text x="55"  y="52"  text-anchor="middle" font-size="11" font-weight="bold" fill="#fff">NW</text>
+      <text x="55"  y="66"  text-anchor="middle" font-size="9"  fill="#dbeafe">mean = 142 m</text>
+
+      <rect x="102" y="8"   width="92" height="94" fill="none" stroke="#166534" stroke-width="2.5" rx="3"/>
+      <text x="148" y="52"  text-anchor="middle" font-size="11" font-weight="bold" fill="#fff">NE</text>
+      <text x="148" y="66"  text-anchor="middle" font-size="9"  fill="#dcfce7">mean = 187 m</text>
+
+      <rect x="8"   y="102" width="94" height="24" fill="none" stroke="#9d174d" stroke-width="2.5" rx="3"/>
+      <text x="55"  y="118" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">SW · 98 m</text>
+
+      <rect x="102" y="102" width="92" height="24" fill="none" stroke="#92400e" stroke-width="2.5" rx="3"/>
+      <text x="148" y="118" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">SE · 223 m</text>
+
+      <!-- result line -->
+      <rect x="8" y="132" width="186" height="24" fill="#f8fafc" rx="3"/>
+      <text x="101" y="147" text-anchor="middle" font-size="9" fill="#64748b">→ zone | mean | min | max | count joined to GeoDataFrame</text>
+    </svg>
+  </div>
+  <div class="col">
+    <div class="card cgreen" style="margin-bottom:0.45em;">
+      <h3>For each polygon: what values are inside the raster?</h3>
+      <p>Mean elevation per district · Total rainfall per watershed · Max NDVI per farm plot</p>
+    </div>
+
+```python
+import geopandas as gpd
+import pandas as pd
+from rasterstats import zonal_stats
+
+zones = gpd.read_file("districts.gpkg")
+
+stats = zonal_stats(
+    zones,
+    "elevation.tif",
+    stats=["mean", "min", "max", "sum", "count"]
+)
+
+# Attach results back to GeoDataFrame
+zones = zones.join(pd.DataFrame(stats))
+zones[["name", "mean", "max"]]
+
+# Now make a choropleth of mean elevation
+zones.plot(column="mean", cmap="terrain",
+           legend=True)
+```
+
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 19 · RASTERIZE ↔ VECTORIZE -->
+
+<div class="badge b3">Part 3 · Operations</div>
+
+## Rasterize ↔ Vectorize
+
+<div class="cols" style="margin-top:0.4em;">
+  <div class="col" style="text-align:center;">
+    <svg viewBox="0 0 200 175" width="100%">
+      <!-- Row 1: Rasterize (polygon → raster) -->
+      <!-- Source polygon -->
+      <polygon points="12,15 52,10 58,42 40,52 8,45" fill="#22c55e" fill-opacity="0.35" stroke="#22c55e" stroke-width="2"/>
+      <text x="33" y="65" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">Polygon</text>
+
+      <!-- Arrow right -->
+      <text x="82" y="38" text-anchor="middle" font-size="10" fill="#64748b" font-weight="700">rasterize()</text>
+      <line x1="65" y1="32" x2="100" y2="32" stroke="#64748b" stroke-width="1.5" marker-end="url(#arast)"/>
+      <defs>
+        <marker id="arast" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 z" fill="#64748b"/>
+        </marker>
+        <marker id="avect" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 z" fill="#64748b"/>
+        </marker>
+      </defs>
+
+      <!-- Result raster grid (colored cells showing the polygon footprint) -->
+      <rect x="105" y="10" width="16" height="16" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="121" y="10" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="137" y="10" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="153" y="10" width="16" height="16" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="169" y="10" width="16" height="16" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="105" y="26" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="121" y="26" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="137" y="26" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="153" y="26" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="169" y="26" width="16" height="16" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="105" y="42" width="16" height="16" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="121" y="42" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="137" y="42" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="153" y="42" width="16" height="16" fill="#22c55e" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="169" y="42" width="16" height="16" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.8"/>
+      <text x="142" y="75" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">Raster mask</text>
+
+      <!-- Divider -->
+      <line x1="5" y1="90" x2="195" y2="90" stroke="#e2e8f0" stroke-width="1.2"/>
+
+      <!-- Row 2: Vectorize (raster → polygon) -->
+      <!-- Source raster (elevation-like) -->
+      <rect x="8"  y="98" width="16" height="16" fill="#fde68a" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="24" y="98" width="16" height="16" fill="#fde68a" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="40" y="98" width="16" height="16" fill="#fdba74" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="56" y="98" width="16" height="16" fill="#fdba74" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="8"  y="114" width="16" height="16" fill="#fdba74" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="24" y="114" width="16" height="16" fill="#fb923c" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="40" y="114" width="16" height="16" fill="#fb923c" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="56" y="114" width="16" height="16" fill="#ea580c" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="8"  y="130" width="16" height="16" fill="#fb923c" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="24" y="130" width="16" height="16" fill="#ea580c" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="40" y="130" width="16" height="16" fill="#c2410c" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="56" y="130" width="16" height="16" fill="#9a3412" stroke="#e2e8f0" stroke-width="0.8"/>
+      <text x="36" y="157" text-anchor="middle" font-size="9" fill="#64748b" font-weight="600">Classified raster</text>
+
+      <!-- Arrow right -->
+      <text x="82" y="123" text-anchor="middle" font-size="10" fill="#64748b" font-weight="700">vectorize()</text>
+      <line x1="78" y1="130" x2="100" y2="130" stroke="#64748b" stroke-width="1.5" marker-end="url(#avect)"/>
+
+      <!-- Result polygons (class boundaries) -->
+      <rect x="105" y="98"  width="32" height="32" fill="#fde68a" fill-opacity="0.5" stroke="#b45309" stroke-width="2" rx="2"/>
+      <rect x="137" y="98"  width="48" height="32" fill="#fdba74" fill-opacity="0.5" stroke="#ea580c" stroke-width="2" rx="2"/>
+      <rect x="105" y="130" width="48" height="32" fill="#fb923c" fill-opacity="0.5" stroke="#c2410c" stroke-width="2" rx="2"/>
+      <rect x="153" y="130" width="32" height="32" fill="#9a3412" fill-opacity="0.5" stroke="#7c2d12" stroke-width="2" rx="2"/>
+      <text x="142" y="172" text-anchor="middle" font-size="9" fill="#64748b" font-weight="600">Vector polygons</text>
+    </svg>
+  </div>
+  <div class="col">
+    <div class="card cblue" style="margin-bottom:0.45em;">
+      <h3>Rasterize — polygon → pixel mask</h3>
+      <p>Turn a polygon layer into a raster where each cell = 1 (inside) or 0 (outside). Used to mask/clip rasters by region.</p>
+    </div>
+    <div class="card cgreen" style="margin-bottom:0.45em;">
+      <h3>Vectorize — raster classes → polygons</h3>
+      <p>Turn connected regions of the same pixel value into polygons. Used with land cover or classification outputs.</p>
+    </div>
+
+```python
+from rasterio import features
+from rasterio.transform import from_bounds
+
+# Rasterize: polygons → grid
+mask = features.rasterize(
+    [(geom, 1) for geom in gdf.geometry],
+    out_shape=(height, width),
+    transform=transform,
+    fill=0, dtype="uint8"
+)
+
+# Vectorize: grid → polygons
+shapes = list(features.shapes(mask, transform=transform))
+polys = gpd.GeoDataFrame(
+    geometry=[shapely.geometry.shape(g) for g,_ in shapes],
+    crs="EPSG:4326"
+)
+```
+
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 20 · QUICK REFERENCE / CHEATSHEET -->
+
+## Quick Reference
+
+<div class="cols" style="margin-top:0.3em;gap:0.9em;">
+  <div class="col">
+    <p style="font-size:0.62em;font-weight:700;color:#1d4ed8;margin:0 0 0.15em;">Vector (geopandas)</p>
+
+```python
+gdf = gpd.read_file("file.shp")      # read
+gdf.crs                               # check CRS
+gdf = gdf.to_crs(32718)              # reproject → meters
+gdf.geometry.area                     # area in m²
+gdf.geometry.buffer(500)              # 500 m buffer
+gpd.overlay(a, b, how="intersection") # clip / union / diff
+gpd.sjoin(pts, polys,                 # spatial join
+          predicate="within")
+polys.dissolve(by="col",              # group + merge
+               aggfunc="sum")
+gdf.to_file("out.gpkg", driver="GPKG")
+```
+
+  </div>
+  <div class="col">
+    <p style="font-size:0.62em;font-weight:700;color:#166534;margin:0 0 0.15em;">Raster / NetCDF</p>
+
+```python
+import rioxarray as rxr, xarray as xr
+from rasterio import features
+
+r = rxr.open_rasterio("f.tif").squeeze()
+r.plot(cmap="terrain")                # heatmap
+r.rio.clip(gdf.geometry, gdf.crs)     # clip to polygon
+r.rio.to_raster("out.tif")
+
+ds = xr.open_dataset("file.nc")
+ds["temp"].mean("time").plot(cmap="coolwarm")
+
+from rasterstats import zonal_stats
+zonal_stats(zones, "r.tif", stats=["mean","max","sum"])
+
+# Rasterize (polygon → grid) / Vectorize (grid → polygon)
+mask  = features.rasterize([(g,1) for g in gdf.geometry],
+                            out_shape=(h,w), transform=t)
+polys = [shape(g) for g,_ in features.shapes(mask, transform=t)]
+```
+
+<p style="font-size:0.62em;font-weight:700;color:#92400e;margin:0.4em 0 0.15em;">Maps</p>
+
+```python
+gdf.plot(column="POP_EST", cmap="YlOrRd",  # choropleth
+         legend=True)
+ds["temp"].mean("time").plot(cmap="hot",   # heatmap
+                             robust=True)
+```
+
+  </div>
+</div>
+
+---
+
+<!-- SLIDE 21 · REFERENCES -->
+
+## References
+
+<div class="cols" style="margin-top:0.35em;gap:1.2em;">
+  <div class="col">
+    <p style="font-size:0.6em;font-weight:700;color:#1d4ed8;margin:0 0 0.25em;">Raster Data</p>
+    <ul style="font-size:0.55em;line-height:2;list-style:disc;padding-left:1em;">
+      <li>ArcGIS Desktop. <em>What is raster data?</em> (2024)</li>
+      <li>ArcGIS Desktop. <em>Cell size of raster data</em> (2024)</li>
+      <li>ArcGIS Desktop. <em>Raster bands</em> (2024)</li>
+      <li>Wikipedia. <em>Landsat program</em></li>
+    </ul>
+    <p style="font-size:0.6em;font-weight:700;color:#1d4ed8;margin:0.5em 0 0.25em;">Vector Data</p>
+    <ul style="font-size:0.55em;line-height:2;list-style:disc;padding-left:1em;">
+      <li>Earth Data Science. <em>Intro to vector data Python</em> (earthdatascience.org)</li>
+    </ul>
+  </div>
+  <div class="col">
+    <p style="font-size:0.6em;font-weight:700;color:#166534;margin:0 0 0.25em;">Operations &amp; Visualization</p>
+    <ul style="font-size:0.55em;line-height:2;list-style:disc;padding-left:1em;">
+      <li>AutoGIS. <em>Overlay analysis</em> — autogis-site.readthedocs.io</li>
+      <li>AutoGIS. <em>Vector data aggregating</em> — autogis-site.readthedocs.io</li>
+      <li>AutoGIS. <em>Static maps (choropleth / heatmap)</em> — autogis-site.readthedocs.io</li>
+      <li>GeoPandas. <em>Set operations</em> — geopandas.org</li>
+      <li>GeoPandas. <em>Aggregation with dissolve</em> — geopandas.org</li>
+      <li>GeoPandas. <em>Merging data</em> — geopandas.org</li>
+    </ul>
+    <div class="insight" style="margin-top:0.6em;font-size:0.62em;">
+      Companion notebook: <code>spatial_analysis_python.ipynb</code> — all examples are live and runnable. &nbsp;·&nbsp; Anzony Quispe · 2026
+    </div>
+  </div>
+</div>
+</textarea>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/markdown/markdown.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    slideNumber: 'c/t',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1100,
+    height: 700,
+    margin: 0.04,
+    plugins: [RevealMarkdown, RevealHighlight]
+  });
+</script>
+</body>
+</html>
