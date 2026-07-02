@@ -119,14 +119,6 @@ Professionals, graduate students, public servants, social researchers, and decis
 
 ---
 
-## Certification
-
-| Certificate | Requirements |
-|-------------|-------------|
-| **Certificate of Completion** | Grade ≥ 11 and attendance ≥ 80% of synchronous sessions |
-| **Certificate of Participation** | Did not pass the course, but attendance ≥ 80% of synchronous sessions |
-
----
 
 
 ## Bibliography
