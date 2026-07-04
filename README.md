@@ -119,7 +119,33 @@ Professionals, graduate students, public servants, social researchers, and decis
 
 ---
 
+## Repository Structure
 
+```
+GeoAgent/
+├── slides/
+│   ├── index.html                     # Session 1 reveal.js slides
+│   ├── theme.css                      # Shared slide styles
+│   ├── lecture2.tex                   # Session 2 Beamer slides (LaTeX)
+│   └── spatial_analysis_python.ipynb  # Full Python cheatsheet notebook
+│
+├── Lectures/
+│   ├── Lecture1.ipynb                 # Session 1 — lecture
+│   ├── Lecture1_Tutorial.ipynb        # Session 1 — hands-on (Peru fires + crop yield)
+│   ├── Lecture2.ipynb                 # Session 2 — folium, lonboard, geowombat, DuckDB, dask
+│   └── Lecture2_Tutorial.ipynb        # Session 2 — end-to-end Peru pipeline
+│
+├── _data/
+│   └── ncfiles/peru/                  # Clipped NetCDF crop yield rasters
+│
+├── pyproject.toml                     # All package dependencies
+├── SETUP.md                           # Conda / pip setup guide
+└── README.md
+```
+
+Compile the LaTeX slides with `latexmk -pdf slides/lecture2.tex` (needs the `metropolis` Beamer theme).
+
+---
 
 ## Bibliography
 

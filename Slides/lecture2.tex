@@ -1,0 +1,742 @@
+% ═══════════════════════════════════════════════════════════════════════
+%  Session 2 · Interactive Maps, Modern Raster, and Big Geo Data
+%  Geo Agents: IA Generativa para el Análisis Geoespacial
+%  Anzony Quispe · Jesus Gastañaduy
+%
+%  Compile with:  latexmk -pdf lecture2.tex     (recommended)
+%           or:   pdflatex lecture2.tex  (twice)
+%  Requires TeX Live 2020+ with the `metropolis` theme.
+% ═══════════════════════════════════════════════════════════════════════
+\documentclass[10pt,aspectratio=169]{beamer}
+
+% ── Theme ─────────────────────────────────────────────────────────────
+\usetheme[
+  progressbar=frametitle,
+  numbering=fraction,
+  block=fill,
+  sectionpage=progressbar,
+]{metropolis}
+
+% ── Packages ──────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{fontawesome5}
+
+% ── Colors (match reveal.js slide palette) ───────────────────────────
+\definecolor{navy}{HTML}{0f172a}
+\definecolor{ink}{HTML}{1e293b}
+\definecolor{mute}{HTML}{64748b}
+\definecolor{blue}{HTML}{1d4ed8}
+\definecolor{blueL}{HTML}{dbeafe}
+\definecolor{orange}{HTML}{ea580c}
+\definecolor{orangeL}{HTML}{fed7aa}
+\definecolor{green}{HTML}{15803d}
+\definecolor{greenL}{HTML}{dcfce7}
+\definecolor{amber}{HTML}{b45309}
+\definecolor{amberL}{HTML}{fef3c7}
+\definecolor{codebg}{HTML}{f8fafc}
+\definecolor{codefg}{HTML}{1e293b}
+\definecolor{coderk}{HTML}{7c2d12}
+
+\setbeamercolor{normal text}{fg=ink}
+\setbeamercolor{alerted text}{fg=orange}
+\setbeamercolor{example text}{fg=green}
+
+% ── Code listings ────────────────────────────────────────────────────
+\lstdefinestyle{py}{
+  language=Python,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{blue}\bfseries,
+  stringstyle=\color{green},
+  commentstyle=\color{mute}\itshape,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codebg},
+  breaklines=true,
+  showstringspaces=false,
+  columns=fullflexible,
+  aboveskip=4pt, belowskip=4pt,
+  numbers=none,
+  xleftmargin=6pt, xrightmargin=6pt,
+}
+\lstdefinestyle{sql}{
+  language=SQL,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{blue}\bfseries,
+  stringstyle=\color{green},
+  commentstyle=\color{mute}\itshape,
+  backgroundcolor=\color{codebg},
+  frame=single, rulecolor=\color{codebg},
+  breaklines=true, showstringspaces=false,
+  columns=fullflexible,
+  aboveskip=4pt, belowskip=4pt,
+  xleftmargin=6pt, xrightmargin=6pt,
+}
+
+% ── Custom callout boxes ─────────────────────────────────────────────
+\newcommand{\insight}[1]{%
+  \begin{tikzpicture}
+    \node[fill=blueL, draw=blue, line width=0.8pt, rounded corners=3pt,
+          inner sep=6pt, text width=\dimexpr\linewidth-14pt]
+      {\small\color{navy}\textbf{Insight.}~#1};
+  \end{tikzpicture}}
+
+\newcommand{\warn}[1]{%
+  \begin{tikzpicture}
+    \node[fill=orangeL, draw=orange, line width=0.8pt, rounded corners=3pt,
+          inner sep=6pt, text width=\dimexpr\linewidth-14pt]
+      {\small\color{coderk}\textbf{Warning.}~#1};
+  \end{tikzpicture}}
+
+\newcommand{\pill}[2]{%
+  \tikz[baseline=(x.base)]\node[fill=#1, rounded corners=6pt, inner sep=3pt,
+      font=\scriptsize\bfseries] (x) {\color{white}#2};}
+
+% ── Title page ───────────────────────────────────────────────────────
+\title{Interactive Maps, Modern Raster \& Big Geo Data}
+\subtitle{Session 2 · Geo Agents}
+\author{Anzony Quispe \and Jesus Gastañaduy}
+\date{2025}
+
+% ═══════════════════════════════════════════════════════════════════════
+\begin{document}
+
+\maketitle
+
+% ═══════════════════════════════════════════════════════════════════════
+\begin{frame}{What we cover today}
+  \begin{columns}[T]
+    \begin{column}{0.32\textwidth}
+      \pill{blue}{Part 1} \\[4pt]
+      \textbf{Interactive maps}
+      \begin{itemize}\itemsep2pt
+        \item \texttt{folium} — Leaflet.js
+        \item \texttt{lonboard} — deck.gl (GPU)
+        \item When to use which
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      \pill{orange}{Part 2} \\[4pt]
+      \textbf{Modern raster}
+      \begin{itemize}\itemsep2pt
+        \item \texttt{geowombat}
+        \item Satellite imagery
+        \item Cloud-native rasters (COG)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      \pill{green}{Part 3} \\[4pt]
+      \textbf{Spatial SQL \& scale}
+      \begin{itemize}\itemsep2pt
+        \item \texttt{GeoParquet}
+        \item \texttt{DuckDB} spatial
+        \item \texttt{dask-geopandas}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.7em}
+  \insight{All examples build on the Peru fires dataset from Session 1 — same data, new tools.}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════════════
+\section{Part 1 · Interactive Maps}
+
+\begin{frame}{Static vs Interactive: why we changed}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Static (matplotlib)}
+      \begin{itemize}\itemsep2pt
+        \item Reproducible in papers
+        \item Fixed extent and zoom
+        \item No hover, no click
+        \item Great for reports \& publications
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Interactive (folium, lonboard)}
+      \begin{itemize}\itemsep2pt
+        \item Pan, zoom, click for details
+        \item Layer toggles \& basemaps
+        \item Shareable HTML files
+        \item Great for exploration \& stakeholders
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \insight{Rule of thumb: use \textbf{matplotlib} for a manuscript, \textbf{folium/lonboard} for a dashboard or a client meeting.}
+\end{frame}
+
+% ─── folium ──
+\begin{frame}[fragile]{\texttt{folium} — Python bindings to Leaflet.js}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{What it is}
+      \begin{itemize}\itemsep2pt
+        \item Thin wrapper around Leaflet.js
+        \item Renders to standalone HTML
+        \item Easy \texttt{Marker}, \texttt{Choropleth}, \texttt{GeoJson}
+        \item Works out of the box in Jupyter
+      \end{itemize}
+      \vspace{0.4em}
+      \textbf{Best for}
+      \begin{itemize}\itemsep2pt
+        \item $<$ 10{,}000 features
+        \item Choropleths of admin boundaries
+        \item Public-facing HTML deliverables
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+\begin{lstlisting}[style=py]
+import folium
+
+m = folium.Map(
+  location=[-9.19, -75.02],  # Peru
+  zoom_start=6,
+  tiles="CartoDB positron",
+)
+
+folium.Choropleth(
+  geo_data=peru.__geo_interface__,
+  data=fire_counts,
+  columns=["GID_1", "n_fires"],
+  key_on="feature.properties.GID_1",
+  fill_color="YlOrRd",
+).add_to(m)
+
+m.save("fires.html")
+\end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ─── lonboard ──
+\begin{frame}[fragile]{\texttt{lonboard} — deck.gl (GPU) in Python}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{What it is}
+      \begin{itemize}\itemsep2pt
+        \item Bindings to Uber's deck.gl (WebGL2/WebGPU)
+        \item Uses \texttt{GeoArrow} $\Rightarrow$ zero-copy data
+        \item Renders \textbf{millions} of points smoothly
+        \item Jupyter-native widget
+      \end{itemize}
+      \vspace{0.4em}
+      \textbf{Best for}
+      \begin{itemize}\itemsep2pt
+        \item $>$ 100{,}000 features (fires, taxi trips, GPS)
+        \item 3D extrusion (buildings, hex bins)
+        \item Speed-critical dashboards
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+\begin{lstlisting}[style=py]
+from lonboard import Map, ScatterplotLayer
+
+layer = ScatterplotLayer.from_geopandas(
+  fires,                    # 70k points
+  get_fill_color=[255,0,0],
+  get_radius=200,
+  radius_units="meters",
+)
+
+Map(layer)     # renders in <1s
+\end{lstlisting}
+      \vspace{0.4em}
+      \warn{Lonboard needs \texttt{pyarrow} and a modern browser (WebGL2).}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{folium vs lonboard — pick the right tool}
+  \centering
+  \small
+  \begin{tabular}{@{}p{3.5cm}p{5.2cm}p{5.2cm}@{}}
+    \toprule
+                        & \textbf{folium}                          & \textbf{lonboard} \\
+    \midrule
+    Backend             & Leaflet.js (SVG/Canvas)                  & deck.gl (WebGL/WebGPU) \\
+    Best point count    & Up to $\sim$10k                          & 100k -- 10M+ \\
+    Data transfer       & JSON (verbose)                           & GeoArrow (binary, fast) \\
+    Output              & Standalone HTML file                     & Jupyter widget \\
+    Learning curve      & Very shallow                             & Shallow \\
+    3D / extrusion      & Limited                                  & Native support \\
+    Basemaps            & Many providers built in                  & Bring your own (Maplibre) \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.6em}
+
+  \insight{Teach students both: \textbf{folium} for clarity, \textbf{lonboard} for scale.}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════════════
+\section{Part 2 · Modern Raster with geowombat}
+
+\begin{frame}{Why \texttt{geowombat}?}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{The problem it solves}
+      \begin{itemize}\itemsep2pt
+        \item \texttt{rasterio} = low-level (open, read window, write)
+        \item \texttt{xarray} = labeled arrays, but manual for satellite bands
+        \item \texttt{geowombat} = high-level API on top of both
+      \end{itemize}
+      \vspace{0.5em}
+      \textbf{Features}
+      \begin{itemize}\itemsep2pt
+        \item Read Landsat / Sentinel scenes with metadata
+        \item Lazy processing via \texttt{dask}
+        \item Band math with \texttt{.norm\_diff()}, \texttt{.tasseled\_cap()}
+        \item Automatic reprojection and clipping
+        \item Cloud-optimized (COG, S3, GCS)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+\begin{lstlisting}[style=py]
+import geowombat as gw
+
+# Landsat 8 Peru scene
+with gw.open(
+    ["B4.TIF","B5.TIF"],
+    band_names=["red","nir"],
+    chunks=1024,
+) as src:
+    ndvi = src.gw.norm_diff("nir","red")
+    ndvi.gw.save("ndvi_peru.tif")
+\end{lstlisting}
+      \vspace{0.4em}
+      \insight{One-line NDVI on a scene of any size — chunks stream, RAM stays flat.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Cloud-Optimized GeoTIFF (COG)}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      A \textbf{COG} is a normal GeoTIFF with two special features:
+      \begin{enumerate}\itemsep3pt
+        \item \textbf{Tiled} internally (512$\times$512 blocks)
+        \item \textbf{Overviews} at multiple resolutions
+      \end{enumerate}
+      \vspace{0.4em}
+      Result: HTTP range requests can fetch \textit{only} the window you need — no full download.
+      \vspace{0.6em}
+
+      \textbf{Real workflow:}
+      \begin{itemize}\itemsep2pt
+        \item Landsat / Sentinel are COGs on AWS \& GCS
+        \item Read a 100km window from a 10GB scene in seconds
+        \item Chain with \texttt{dask} for parallel processing
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+\begin{lstlisting}[style=py]
+# Read a COG directly from AWS
+url = ("s3://sentinel-cogs/"
+       "sentinel-s2-l2a-cogs/"
+       "18/L/UL/2024/6/"
+       "S2A_18LUL_20240610_0_L2A/"
+       "B04.tif")
+
+with gw.open(url) as src:
+    # only fetches the window
+    subset = src.gw.subset(
+        left=-77.1, right=-77.0,
+        top=-12.0, bottom=-12.1,
+    )
+    subset.gw.save("lima_red.tif")
+\end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════════════
+\section{Part 3 · Spatial SQL \& Big Geo Data}
+
+\begin{frame}{The scaling problem}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{When geopandas breaks down}
+      \begin{itemize}\itemsep2pt
+        \item File $>$ RAM (a 10 GB shapefile)
+        \item Query one small area of a huge dataset
+        \item Millions of joins between two layers
+        \item Repeated ad-hoc queries in a pipeline
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Three tools for three problems}
+      \begin{itemize}\itemsep2pt
+        \item \textbf{GeoParquet} — columnar, compressed geo format
+        \item \textbf{DuckDB spatial} — SQL on geoparquet, in-process
+        \item \textbf{dask-geopandas} — parallel geopandas
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.6em}
+  \insight{These are the \textit{modern} big-geo stack — used by Overture Maps, Microsoft Buildings, Meta HDX.}
+\end{frame}
+
+\begin{frame}[fragile]{GeoParquet — 10$\times$ smaller than shapefile}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{What it is}
+      \begin{itemize}\itemsep2pt
+        \item Apache Parquet (columnar) + geo extension
+        \item Encodes geometry as WKB inside a Parquet column
+        \item Native to Arrow ecosystem (fast, zero-copy)
+      \end{itemize}
+      \vspace{0.4em}
+      \textbf{Why it wins}
+      \begin{itemize}\itemsep2pt
+        \item Compression: $\sim$10$\times$ vs shapefile
+        \item Column pruning: read only the columns you need
+        \item Row group filters (predicate pushdown)
+        \item Cloud-friendly: partial reads via HTTP range
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+\begin{lstlisting}[style=py]
+import geopandas as gpd
+
+# Write
+gdf.to_parquet(
+  "fires.parquet",
+  compression="snappy",
+)
+
+# Read
+gdf = gpd.read_parquet(
+  "fires.parquet",
+  columns=["geometry","frp"],
+)
+
+# Or from cloud
+gdf = gpd.read_parquet(
+  "s3://.../fires.parquet",
+)
+\end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{DuckDB spatial — SQL on geo, zero setup}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{What it is}
+      \begin{itemize}\itemsep2pt
+        \item In-process OLAP database (like SQLite)
+        \item \texttt{INSTALL spatial;} adds PostGIS-like functions
+        \item Reads shapefiles, GeoJSON, GeoParquet directly
+        \item Vectorised, columnar, multi-threaded
+      \end{itemize}
+      \vspace{0.4em}
+      \textbf{Why it wins over PostGIS}
+      \begin{itemize}\itemsep2pt
+        \item No server to install or run
+        \item Runs inside a notebook
+        \item Reads Parquet without loading it into RAM
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+\begin{lstlisting}[style=sql]
+INSTALL spatial;  LOAD spatial;
+
+-- Fires per Peru region, in SQL
+SELECT
+  p.NAME_1,
+  COUNT(*) AS n_fires,
+  SUM(f.frp) AS total_frp
+FROM 'fires.parquet' AS f
+JOIN 'peru_regions.parquet' AS p
+  ON ST_Within(f.geometry, p.geometry)
+GROUP BY p.NAME_1
+ORDER BY n_fires DESC;
+\end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{dask-geopandas} — parallel geopandas}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{What it is}
+      \begin{itemize}\itemsep2pt
+        \item Drop-in \texttt{GeoDataFrame} replacement
+        \item Lazy: builds a computation graph, runs on \texttt{.compute()}
+        \item Partitions data across CPU cores
+        \item Uses Hilbert-curve spatial partitioning
+      \end{itemize}
+      \vspace{0.4em}
+      \textbf{Best for}
+      \begin{itemize}\itemsep2pt
+        \item Multi-year fires (5+ GB)
+        \item Country-scale OSM road networks
+        \item Repeated \texttt{sjoin} on the same base layers
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+\begin{lstlisting}[style=py]
+import dask_geopandas as dgpd
+
+# Read partitioned parquet
+fires = dgpd.read_parquet(
+  "fires_*.parquet",
+  npartitions=8,
+)
+
+# Spatially partition once
+fires = fires.spatial_shuffle()
+
+# All ops are lazy
+result = (
+  fires.sjoin(regions)
+       .groupby("NAME_1")
+       .size()
+       .compute()   # trigger
+)
+\end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════════════
+\section{The Modern Geo Stack}
+
+\begin{frame}{One picture, all the pieces}
+  \centering
+  \begin{tikzpicture}[
+    node distance=0.35cm,
+    box/.style={draw, rounded corners=3pt, minimum height=1.4em, inner sep=6pt,
+                font=\small, align=center},
+    row/.style={draw=none},
+  ]
+    % Data layer
+    \node[box, fill=amberL, draw=amber]  (parquet) {GeoParquet};
+    \node[box, fill=amberL, draw=amber, right=of parquet] (cog) {COG (raster)};
+    \node[box, fill=amberL, draw=amber, right=of cog] (osm) {OSM / GADM};
+
+    % Compute layer
+    \node[box, fill=greenL, draw=green, below=1.5cm of parquet.south west, anchor=north west]
+         (duckdb) {DuckDB spatial (SQL)};
+    \node[box, fill=greenL, draw=green, right=of duckdb] (dask) {dask-geopandas};
+    \node[box, fill=greenL, draw=green, right=of dask] (gw) {geowombat};
+
+    % Presentation layer
+    \node[box, fill=blueL, draw=blue, below=1.5cm of duckdb.south west, anchor=north west]
+         (folium) {folium (Leaflet)};
+    \node[box, fill=blueL, draw=blue, right=of folium] (lon) {lonboard (deck.gl)};
+    \node[box, fill=blueL, draw=blue, right=of lon] (mpl) {matplotlib};
+
+    % Row labels
+    \node[left=0.2cm of parquet, font=\small\bfseries\color{amber}] {Storage};
+    \node[left=0.2cm of duckdb,  font=\small\bfseries\color{green}] {Compute};
+    \node[left=0.2cm of folium,  font=\small\bfseries\color{blue}]  {Present};
+
+    % Arrows
+    \foreach \a/\b in {parquet/duckdb, parquet/dask, cog/gw, osm/duckdb}
+       \draw[->, gray, thick] (\a.south) -- (\b.north);
+    \foreach \a/\b in {duckdb/folium, duckdb/lon, dask/lon, dask/mpl, gw/mpl}
+       \draw[->, gray, thick] (\a.south) -- (\b.north);
+  \end{tikzpicture}
+
+  \vspace{0.7em}
+  \insight{Same data flows through storage $\rightarrow$ compute $\rightarrow$ presentation. Each row is swappable.}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════════════
+\section{Cheatsheet}
+
+\begin{frame}{Which tool for which job?}
+  \centering
+  \small
+  \begin{tabular}{@{}p{4.8cm}p{7.5cm}@{}}
+    \toprule
+    \textbf{Task}                                  & \textbf{Reach for} \\
+    \midrule
+    Interactive map, $<$10k features               & \texttt{folium} \\
+    Interactive map, $>$100k features              & \texttt{lonboard} \\
+    Read Landsat / Sentinel, compute NDVI          & \texttt{geowombat} \\
+    Stream a raster from AWS S3                    & \texttt{geowombat} + COG URL \\
+    Store a 10 GB shapefile efficiently            & \texttt{GeoParquet} (\texttt{to\_parquet}) \\
+    Spatial join in SQL syntax                     & \texttt{DuckDB spatial} \\
+    Query a subset of a huge geo dataset           & \texttt{DuckDB} + Parquet pushdown \\
+    Parallelise \texttt{sjoin} across CPU cores    & \texttt{dask-geopandas} \\
+    Publish a shareable HTML map                   & \texttt{folium} $\rightarrow$ \texttt{.save()} \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════════════
+\section{Replication Papers}
+
+\begin{frame}{Ten papers you can replicate with this toolkit}
+  \small
+  All use \textbf{open data} and methods that translate cleanly to
+  \texttt{geopandas} / \texttt{rasterio} / \texttt{xarray} / \texttt{rasterstats}.
+  \vspace{0.4em}
+
+  \begin{tabular}{@{}p{0.4cm}p{3.6cm}p{6.6cm}p{2.6cm}@{}}
+    \toprule
+    \# & Topic & Paper (short) & Journal \\
+    \midrule
+    1  & Peru mining        & Arag\'on \& Rud (2013)                & AEJ:Policy \\
+    2  & El Ni\~no + conflict & Hsiang, Meng \& Cane (2011)         & Nature \\
+    3  & Amazon credit      & Assun\c{c}\~ao et al. (2020)          & Econ. Journal \\
+    4  & Indigenous rights  & Baragwanath \& Bayi (2020)            & PNAS \\
+    5  & PES deforestation  & Alix-Garcia et al. (2015)             & AEJ:Policy \\
+    6  & BRT / Bogot\'a     & Tsivanidis (2025)                     & AER \\
+    7  & China highways     & Faber (2014)                          & RESTUD \\
+    8  & Nightlights+roads  & Storeygard (2016)                     & RESTUD \\
+    9  & Healthcare access  & Weiss et al. (2020)                   & Nature Med. \\
+    10 & Markets \& poverty & Alix-Garcia et al. (2013)             & REStat \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+% ── El Niño & Peru ──
+\begin{frame}{\pill{amber}{El Ni\~no · Peru}~~Two starters}
+  \small
+  \textbf{Arag\'on, F. \& Rud, J.P. (2013).} \emph{Natural Resources and Local
+    Communities: Evidence from a Peruvian Gold Mine.} AEJ:Policy 5(2), 1--25.
+    \\
+    \textcolor{mute}{Q: Does the Yanacocha mine raise local incomes?}
+    \textcolor{mute}{Data: mine coord + GADM districts + ENAHO. Method:
+    concentric distance buffers + DiD.}
+    \faLink~\href{https://doi.org/10.1257/pol.5.2.1}{10.1257/pol.5.2.1}
+    \vspace{0.6em}
+
+  \textbf{Hsiang, S., Meng, K. \& Cane, M. (2011).} \emph{Civil conflicts are
+    associated with the global climate.} Nature 476, 438--441.
+    \\
+    \textcolor{mute}{Q: Does ENSO cause civil war?}
+    \textcolor{mute}{Data: NOAA ENSO teleconnection + UCDP/PRIO conflicts.
+    Method: raster-to-country panel regression.}
+    \faLink~\href{https://doi.org/10.1038/nature10311}{10.1038/nature10311}
+    \vspace{0.6em}
+
+  \insight{\textbf{For Peru specifically:} Caramanica et al. (2020, PNAS) on
+    El-Ni\~no-resilient farming — \emph{remote-sensing of ancient canals}.
+    \href{https://doi.org/10.1073/pnas.2006519117}{10.1073/pnas.2006519117}}
+\end{frame}
+
+% ── Deforestation ──
+\begin{frame}{\pill{green}{Deforestation}~~Three canonical replications}
+  \small
+  \textbf{Assun\c{c}\~ao, J., Gandour, C. \& Rocha, R. (2020).} \emph{The Effect
+    of Rural Credit on Deforestation.} Economic Journal 130(626), 290--330.
+    \\
+    \textcolor{mute}{Data: INPE PRODES rasters + IBGE municipal shapefiles.
+    Method: zonal stats on annual forest-loss + DiD around a credit policy shock.
+    \emph{Ideal geopandas+rasterio exercise.}}
+    \faLink~\href{https://doi.org/10.1093/ej/uez060}{10.1093/ej/uez060}
+    \vspace{0.5em}
+
+  \textbf{Baragwanath, K. \& Bayi, E. (2020).} \emph{Collective property rights
+    reduce deforestation in the Brazilian Amazon.} PNAS 117(34), 20495--20502.
+    \\
+    \textcolor{mute}{Data: Hansen GFC (free) + FUNAI indigenous territories.
+    Method: spatial RD at territory borders. Replication code posted.}
+    \faLink~\href{https://doi.org/10.1073/pnas.1917874117}{10.1073/pnas.1917874117}
+    \vspace{0.5em}
+
+  \textbf{Alix-Garcia, J., Sims, K. \& Ya\~nez-Pagans, P. (2015).} \emph{Only
+    One Tree from Each Seed?} AEJ:Policy 7(4), 1--40.
+    \\
+    \textcolor{mute}{Data: MODIS/Landsat + CONAFOR PES parcels. Method:
+    matched DiD + zonal stats. Full openICPSR replication package.}
+    \faLink~\href{https://doi.org/10.1257/pol.20130139}{10.1257/pol.20130139}
+\end{frame}
+
+% ── Transportation & highways ──
+\begin{frame}{\pill{blue}{Transportation \& Highways}}
+  \small
+  \textbf{Tsivanidis, N. (2025).} \emph{Evaluating the Impact of Urban Transit
+    Infrastructure: Evidence from Bogot\'a's TransMilenio.} AER (forthcoming).
+    \\
+    \textcolor{mute}{Data: Bogot\'a census tracts + GTFS + OSM roads. Method:
+    accessibility index before/after BRT + quantitative spatial GE model.
+    Replication on openICPSR project 237317.}
+    \vspace{0.5em}
+
+  \textbf{Faber, B. (2014).} \emph{Trade Integration, Market Size, and
+    Industrialization: Evidence from China's National Trunk Highway System.}
+    RESTUD 81(3), 1046--1070.
+    \\
+    \textcolor{mute}{Data: digitised NTHS network + county boundaries. Method:
+    least-cost path via straight-line IV. Great \texttt{networkx}/\texttt{osmnx} exercise.}
+    \faLink~\href{https://doi.org/10.1093/restud/rdu010}{10.1093/restud/rdu010}
+    \vspace{0.5em}
+
+  \textbf{Storeygard, A. (2016).} \emph{Farther on Down the Road: Transport
+    Costs, Trade and Urban Growth in sub-Saharan Africa.} RESTUD 83(3), 1263--1295.
+    \\
+    \textcolor{mute}{Data: DMSP-OLS nightlights (free NOAA) + digitized road
+    network + city polygons. Method: shortest-path + panel regression --
+    a classic \texttt{rasterio} zonal-stats exercise.}
+    \faLink~\href{https://doi.org/10.1093/restud/rdw020}{10.1093/restud/rdw020}
+\end{frame}
+
+% ── Hospitals & markets ──
+\begin{frame}{\pill{orange}{Hospitals \& Markets}}
+  \small
+  \textbf{Weiss, D.J., Nelson, A., et al. (2020).} \emph{Global maps of travel
+    time to healthcare facilities.} Nature Medicine 26, 1835--1838.
+    \\
+    \textcolor{mute}{Data: OSM roads + land cover + DEM + facility points.
+    Method: friction surface + least-cost travel-time raster via
+    \texttt{skimage.graph}. Full code + rasters released by Malaria Atlas Project.}
+    \faLink~\href{https://doi.org/10.1038/s41591-020-1059-1}{10.1038/s41591-020-1059-1}
+    \vspace{0.6em}
+
+  \textbf{Alix-Garcia, J., McIntosh, C., Sims, K. \& Welch, J. (2013).}
+    \emph{The Ecological Footprint of Poverty Alleviation: Evidence from
+    Mexico's Oportunidades Program.} REStat 95(2), 417--435.
+    \\
+    \textcolor{mute}{Data: MODIS forest cover + Progresa locality coordinates
+    + road network. Method: RD around eligibility cutoff + zonal stats.
+    Shows how \emph{market access} mediates the income-to-deforestation link.}
+    \faLink~\href{https://doi.org/10.1162/REST_a_00349}{10.1162/REST\_a\_00349}
+    \vspace{0.6em}
+
+  \insight{Every paper here uses \textbf{only open data} (Hansen GFC, PRODES,
+    MODIS/Landsat, DMSP/VIIRS nightlights, GADM, OSM, NOAA, Malaria Atlas).}
+\end{frame}
+
+% ── Practical replication tips ──
+\begin{frame}{How to pick one for a replication project}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Easiest to replicate}
+      \begin{itemize}\itemsep2pt
+        \item Assun\c{c}\~ao et al. (open code + open rasters)
+        \item Alix-Garcia et al. 2015 (openICPSR)
+        \item Storeygard (nightlights are easy)
+        \item Weiss et al. (Malaria Atlas gives the rasters)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Hardest (do a simplified version)}
+      \begin{itemize}\itemsep2pt
+        \item Tsivanidis (full GE model is heavy)
+        \item Hsiang et al. (needs teleconnection zoning)
+        \item Faber (digitising the highway network)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.7em}
+  \insight{Course project idea: pick one paper, simplify to one country + one year, replicate the main figure. All the tools you need are in this lecture.}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════════════
+\begin{frame}[standout]
+  Session 2 done. \\[4pt]
+  \small Next: Session 3 --- Generating Spatial Data \& Climate Models.
+\end{frame}
+
+\end{document}
