@@ -17,12 +17,14 @@ conda activate geoagent
 conda install -c conda-forge \
     geopandas shapely rasterio rioxarray \
     xarray netCDF4 affine rasterstats h5py \
-    contextily folium dask-geopandas \
+    contextily folium dask-geopandas pyarrow \
+    duckdb geowombat \
     matplotlib numpy pandas \
     ipykernel jupyter -y
 
 # 3. Install remaining packages via pip
 pip install \
+    lonboard \
     python-dotenv requests rich \
     ollama \
     langchain langchain-google-genai \
@@ -75,8 +77,12 @@ Open any notebook in `Lectures/` or `slides/` and select the **GeoAgent (3.12)**
 Run this in a notebook cell to confirm all Session 1 packages are available:
 
 ```python
+# Session 1 stack
 import geopandas, rasterio, rioxarray, xarray, rasterstats, affine
-import folium, contextily, dask_geopandas
+import folium, contextily
+# Session 2 stack
+import lonboard, geowombat, duckdb, dask_geopandas, pyarrow
+# Base
 import numpy, pandas, matplotlib
 
 print("geopandas  :", geopandas.__version__)
@@ -84,5 +90,8 @@ print("rasterio   :", rasterio.__version__)
 print("xarray     :", xarray.__version__)
 print("rasterstats:", rasterstats.__version__)
 print("folium     :", folium.__version__)
+print("lonboard   :", lonboard.__version__)
+print("geowombat  :", geowombat.__version__)
+print("duckdb     :", duckdb.__version__)
 print("All packages loaded successfully ✓")
 ```

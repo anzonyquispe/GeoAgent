@@ -28,8 +28,13 @@ dependencies = [
     # ── visualization (Sessions 1-2) ──────────────────────────────────────
     "folium>=0.20.0",
     "contextily>=1.5.0",
-    # ── big geo data (Session 3) ──────────────────────────────────────────
+    "lonboard>=0.10.0",
+    # ── modern raster (Session 2) ─────────────────────────────────────────
+    "geowombat>=2.1.0",
+    # ── spatial SQL & big geo data (Session 2) ────────────────────────────
+    "duckdb>=1.1.0",
     "dask-geopandas>=0.3.0",
+    "pyarrow>=15.0.0",
     # ── AI agent stack (Sessions 5-8) ────────────────────────────────────
     "ollama>=0.4.0",
     "langchain[google-genai]>=1.0.5",
