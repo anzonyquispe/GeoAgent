@@ -1,0 +1,197 @@
+// ============================================================================
+//  Bellavista (San Martín, Perú) — Identificación de ARROZ y PALMA aceitera
+//  Método: clustering no supervisado sobre AlphaEarth (64 dim)
+//  Basado en el tutorial oficial de Google:
+//  "Satellite Embedding: clasificación no supervisada"
+//  ----------------------------------------------------------------------------
+//  OPTIMIZACIÓN PARA SELVA ALTA (Cero Timeouts):
+//  Muestreo balanceado y filtro de pendiente (SRTM) para buscar cobertura 
+//  arbórea únicamente en terrenos planos (pendiente < 5°).
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+//  PASO 1 — Región: provincia de Bellavista, San Martín
+// ---------------------------------------------------------------------------
+var gaul2 = ee.FeatureCollection("FAO/GAUL/2015/level2");
+var selected = gaul2
+  .filter(ee.Filter.eq('ADM1_NAME', 'San Martín'))
+  .filter(ee.Filter.eq('ADM2_NAME', 'Bellavista'));
+var geometry = selected.geometry();
+
+print('Tamaño de "selected" (debe ser 1)', selected.size());
+
+Map.centerObject(geometry, 10);
+Map.addLayer(geometry, {color: 'red'}, 'Bellavista (borde)', false);
+
+
+// ---------------------------------------------------------------------------
+//  PASO 2 — Embeddings AlphaEarth para el año de interés
+// ---------------------------------------------------------------------------
+var year = 2022;                                    
+var startDate = ee.Date.fromYMD(year, 1, 1);
+var endDate = startDate.advance(1, 'year');
+
+var embeddings = ee.ImageCollection('GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL')
+  .filter(ee.Filter.date(startDate, endDate))
+  .filter(ee.Filter.bounds(geometry));
+var embeddingsImage = embeddings.mosaic();
+
+
+// ---------------------------------------------------------------------------
+//  PASO 3 — Máscara de llanura (Filtro de Pendiente SRTM)
+// ---------------------------------------------------------------------------
+var wc = ee.Image("ESA/WorldCover/v200/2021").select('Map');
+var srtm = ee.Image("USGS/SRTMGL1_003");
+var slope = ee.Terrain.slope(srtm);
+
+// Cobertura arbórea en llanuras (candidato a palma) + zonas agrícolas
+var flatTree = wc.eq(10).and(slope.lt(5)); 
+var cropMask = wc.eq(40).or(flatTree).rename('cropmask').clip(geometry);
+
+var cropMaskVis = {min: 0, max: 1, palette: ['white', 'green']};
+Map.addLayer(cropMask, cropMaskVis, 'Máscara optimizada (Planicies)');
+
+
+// ---------------------------------------------------------------------------
+//  PASO 4 — Muestreo estratificado optimizado para velocidad
+// ---------------------------------------------------------------------------
+var clusterImage = embeddingsImage.updateMask(cropMask);
+
+var training = clusterImage.addBands(cropMask).stratifiedSample({
+  numPoints: 800, // Ajustado para evitar el Timeout interactivo
+  classBand: 'cropmask',
+  region: geometry,
+  scale: 30,      // Escala optimizada para procesamiento rápido
+  tileScale: 16,
+  seed: 100,
+  dropNulls: true,
+  geometries: true
+});
+// Use the exported asset
+// var training = ee.FeatureCollection(samplesExportFcPath);
+Map.addLayer(training, {color: 'blue'}, 'Muestras de entrenamiento', false);
+
+
+// ---------------------------------------------------------------------------
+//  PASO 5 — Clustering no supervisado con fragmentación fina
+// ---------------------------------------------------------------------------
+var minClusters = 4;   
+var maxClusters = 5;   
+
+var clusterer = ee.Clusterer.wekaCascadeKMeans({
+  minClusters: minClusters,
+  maxClusters: maxClusters
+}).train({
+  features: training,
+  inputProperties: clusterImage.bandNames()
+});
+
+var clustered = clusterImage.cluster(clusterer);
+Map.addLayer(clustered.randomVisualizer().clip(geometry), {}, 'Clusters (aleatorio)');
+
+
+// ---------------------------------------------------------------------------
+//  PASO 6 — Estadísticas oficiales (MIDAGRI / CENAGRO)
+// ---------------------------------------------------------------------------
+var areaArrozOficial = 25400; // ha 
+var areaPalmaOficial = 322;   // ha 
+
+
+// ---------------------------------------------------------------------------
+//  PASO 7 — Asignación automatizada de etiquetas por proximidad
+// ---------------------------------------------------------------------------
+var clusterAreaImage = ee.Image.pixelArea().divide(10000).addBands(clustered);
+
+var areas = clusterAreaImage.reduceRegion({
+  reducer: ee.Reducer.sum().group({groupField: 1, groupName: 'cluster'}),
+  geometry: geometry,
+  scale: 30, // Consistente con el muestreo para evitar caídas de memoria
+  maxPixels: 1e11,
+  tileScale: 16
+});
+
+var clusterAreaFc = ee.FeatureCollection(
+  ee.List(areas.get('groups')).map(function(item) {
+    var d = ee.Dictionary(item);
+    return ee.Feature(null, {
+      cluster: d.getNumber('cluster').format(),
+      area_ha: d.getNumber('sum')
+    });
+  })
+);
+
+var clusterAreaSorted = clusterAreaFc.sort('area_ha', false);
+print('Áreas calculadas por cluster (ha)', clusterAreaSorted);
+
+var clusterList = clusterAreaSorted.toList(clusterAreaSorted.size());
+
+var findClosestCluster = function(targetArea, excludeClusterStr) {
+  var withDiff = ee.FeatureCollection(clusterList).map(function(f) {
+    f = ee.Feature(f);
+    var diff = ee.Number(f.get('area_ha')).subtract(targetArea).abs();
+    return f.set('diff', diff);
+  });
+  if (excludeClusterStr !== null) {
+    withDiff = withDiff.filter(ee.Filter.neq('cluster', excludeClusterStr));
+  }
+  return withDiff.sort('diff').first();
+};
+
+var riceFeature = findClosestCluster(areaArrozOficial, null);
+var riceClusterStr = riceFeature.get('cluster');
+
+var palmFeature = findClosestCluster(areaPalmaOficial, riceClusterStr);
+var palmClusterStr = palmFeature.get('cluster');
+
+print('>> Cluster efectivo ARROZ asignado:', riceFeature);
+print('>> Cluster efectivo PALMA asignado:', palmFeature);
+
+var riceCluster = ee.Number.parse(riceClusterStr);
+var palmCluster = ee.Number.parse(palmClusterStr);
+
+
+// ---------------------------------------------------------------------------
+//  PASO 8 — Mapa de cultivos final + leyenda
+// ---------------------------------------------------------------------------
+var rice = clustered.eq(riceCluster);
+var palm = clustered.eq(palmCluster);
+var merged = rice.add(palm.multiply(2));   
+
+var cropVis = {min: 0, max: 2, palette: ['#bdbdbd', '#4daf4a', '#984ea3']};
+Map.addLayer(merged.selfMask().clip(geometry), cropVis, 'Mapa cultivos (Arroz/Palma)');
+
+var legend = ui.Panel({
+  layout: ui.Panel.Layout.Flow('horizontal'),
+  style: {position: 'bottom-center', padding: '8px 15px'}
+});
+var addItem = function(color, name) {
+  var colorBox = ui.Label({style: {color: '#ffffff', backgroundColor: color, padding: '10px', margin: '0 4px 4px 0'}});
+  var description = ui.Label({value: name, style: {margin: '0px 10px 0px 2px'}});
+  return ui.Panel({widgets: [colorBox, description], layout: ui.Panel.Layout.Flow('horizontal')});
+};
+var title = ui.Label({value: 'Cultivos detectados — Bellavista', style: {fontWeight: 'bold', fontSize: '16px', margin: '0px 10px 0px 4px'}});
+legend.add(title); legend.add(addItem('#4daf4a', 'Arroz')); legend.add(addItem('#984ea3', 'Palma aceitera')); legend.add(addItem('#bdbdbd', 'Otros'));
+Map.add(legend);
+
+
+// ---------------------------------------------------------------------------
+//  PASO 9 — Validación de Control de Calidad
+// ---------------------------------------------------------------------------
+var areaRiceDetected = ee.Image.pixelArea().divide(10000).updateMask(rice)
+  .reduceRegion({reducer: ee.Reducer.sum(), geometry: geometry, scale: 30, maxPixels: 1e11, tileScale: 16}).getNumber('area');
+var areaPalmDetected = ee.Image.pixelArea().divide(10000).updateMask(palm)
+  .reduceRegion({reducer: ee.Reducer.sum(), geometry: geometry, scale: 30, maxPixels: 1e11, tileScale: 16}).getNumber('area');
+
+print('--- ÁREAS DETECTADAS VS OFICIALES ---');
+print('Área ARROZ detectada (ha)', areaRiceDetected.round());
+print('Área ARROZ oficial (ha)', areaArrozOficial);
+print('Área PALMA detectada (ha)', areaPalmDetected.round());
+print('Área PALMA oficial (ha)', areaPalmaOficial);
+
+var palmCheck = ee.Dictionary({detectada: areaPalmDetected, oficial: areaPalmaOficial});
+palmCheck.evaluate(function(d) {
+  var ratio = d.detectada / d.oficial;
+  if (ratio > 3 || ratio < 0.3) {
+    print('ALERTA: El área detectada difiere de la estadística oficial.');
+  }
+});
