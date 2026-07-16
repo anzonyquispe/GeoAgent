@@ -1,0 +1,6 @@
+[mcp_servers.qgis-tools]
+command = "python"
+args = ["qgis_mcp_server.py"]
+
+[mcp_servers.qgis-tools.env]
+PYTHONPATH = "."
