@@ -1,0 +1,55 @@
+{
+  "dxt_version": "0.1",
+  "name": "peru-wildfire-analysis",
+  "display_name": "Peru Wildfire Analysis",
+  "version": "0.1.0",
+  "description": "Download, aggregate, and visualize NASA VIIRS wildfire data for Peru by department.",
+  "author": {
+    "name": "Jesus Gastanaduy"
+  },
+  "server": {
+    "type": "python",
+    "entry_point": "server.py",
+    "mcp_config": {
+      "command": "/Users/jgastanaduy/.local/bin/uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/jgastanaduy/GitHub/geo-agent",
+        "python",
+        "deepagents/clase4/server.py"
+      ]
+    }
+  },
+  "tools": [
+    {
+      "name": "download_viirs_snpp_peru",
+      "description": "Download NASA FIRMS VIIRS-SNPP fire detections for Peru for a given year."
+    },
+    {
+      "name": "fires_clean",
+      "description": "Convert downloaded fire data into a GeoDataFrame with geometry."
+    },
+    {
+      "name": "download_ctry_shp",
+      "description": "Download Peru department boundary polygons from GADM."
+    },
+    {
+      "name": "intersect_and_collapse_fires_peru",
+      "description": "Spatially join fires with boundaries and aggregate fire counts."
+    },
+    {
+      "name": "plot_fires_choropleth_peru",
+      "description": "Render a static choropleth PNG of fire counts by department."
+    },
+    {
+      "name": "analyze_peru_fires",
+      "description": "Run the full pipeline (download, clean, boundaries, aggregate) for a year in one call."
+    }
+  ],
+  "keywords": ["peru", "wildfire", "fires", "viirs", "geospatial", "gis"],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": ["darwin"]
+  }
+}
