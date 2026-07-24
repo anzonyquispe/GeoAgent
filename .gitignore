@@ -1,0 +1,23 @@
+# Assignment 1 - Grupo 3: reproducible local cache and downloaded data
+/Assignments/Assignment1/cache_grupo3/
+
+# Jupyter
+**/.ipynb_checkpoints/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+.conda/
+
+# Python bytecode and caches
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Temporary and partial-download files
+*.tmp
+*.temp
+*.part
+*~
+
